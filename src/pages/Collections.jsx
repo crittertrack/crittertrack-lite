@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, ChevronRight, Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
-import { API_BASE_URL } from '../utils/apiConfig';
 import { useCollections } from '../hooks/useCollections';
 
 const Collections = ({ authToken }) => {
@@ -21,9 +20,7 @@ const Collections = ({ authToken }) => {
         if (!authToken) return;
         setLoadingAnimals(true);
         try {
-            const response = await axios.get(`${API_BASE_URL}/animals`, {
-                headers: { Authorization: `Bearer ${authToken}` }
-            });
+            const response = await apiClient.get('/animals');
             // isViewOnly = transferred-in animal the user doesn't actually own (archived is
             // already excluded server-side).
             setAnimals((Array.isArray(response.data) ? response.data : []).filter((a) => !a.isViewOnly));

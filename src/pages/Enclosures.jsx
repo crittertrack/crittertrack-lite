@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { Loader2, Home, Pencil, Check, X, Plus } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import EnclosureDetailModal from '../components/EnclosureDetailModal';
-import { API_BASE_URL } from '../utils/apiConfig';
-
-const authHeaders = (authToken) => ({ headers: { Authorization: `Bearer ${authToken}` } });
 
 const PURPOSE_OPTIONS = [
     { value: '', label: 'General' },
@@ -37,8 +34,8 @@ const Enclosures = ({ authToken }) => {
         setLoading(true);
         try {
             const [enclosuresRes, animalsRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/enclosures`, authHeaders(authToken)),
-                axios.get(`${API_BASE_URL}/animals`, authHeaders(authToken)),
+                apiClient.get('/enclosures'),
+                apiClient.get('/animals'),
             ]);
             setEnclosures(Array.isArray(enclosuresRes.data) ? enclosuresRes.data : []);
             // isViewOnly = transferred-in animal the user doesn't actually own (archived is
@@ -66,10 +63,10 @@ const Enclosures = ({ authToken }) => {
 
     const saveEdit = async (enc) => {
         try {
-            await axios.put(`${API_BASE_URL}/enclosures/${enc._id}`, {
+            await apiClient.put(`/enclosures/${enc._id}`, {
                 name: editForm.name,
                 capacity: editForm.capacity === '' ? null : Number(editForm.capacity),
-            }, authHeaders(authToken));
+            });
             setEditingId(null);
             fetchAll();
         } catch (error) {
@@ -82,7 +79,7 @@ const Enclosures = ({ authToken }) => {
         if (!newEnc.name.trim()) return;
         setCreating(true);
         try {
-            await axios.post(`${API_BASE_URL}/enclosures`, {
+            await apiClient.post('/enclosures', {
                 name: newEnc.name.trim(),
                 enclosureType: newEnc.enclosureType.trim(),
                 purpose: newEnc.purpose,
@@ -92,7 +89,7 @@ const Enclosures = ({ authToken }) => {
                     height: newEnc.height ? Number(newEnc.height) : null,
                     unit: newEnc.unit,
                 },
-            }, authHeaders(authToken));
+            });
             setNewEnc(emptyNewEnc);
             setShowAddForm(false);
             fetchAll();

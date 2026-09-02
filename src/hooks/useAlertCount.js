@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../utils/apiConfig';
+import apiClient from '../utils/apiClient';
 
 // Polls the same due-item counts shown on the Notifications page, for the bell icon badge.
 // Also refetches immediately on a 'notifications-changed' event (dispatched after any
@@ -11,7 +10,7 @@ export const useAlertCount = (authToken) => {
     const fetchCount = useCallback(async () => {
         if (!authToken) { setCount(0); return; }
         try {
-            const { data } = await axios.get(`${API_BASE_URL}/push/alert-count`, { headers: { Authorization: `Bearer ${authToken}` } });
+            const { data } = await apiClient.get('/push/alert-count');
             setCount(data?.total || 0);
         } catch (err) {
             console.error('Failed to fetch alert count:', err);

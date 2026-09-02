@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Plus, Loader2, X } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalCard from '../components/AnimalCard';
 import QuickAddAnimalModal from '../components/QuickAddAnimalModal';
-import { API_BASE_URL } from '../utils/apiConfig';
 import { parseLocalDate } from '../utils/dateFormatter';
 import { useCollections } from '../hooks/useCollections';
 
@@ -74,9 +73,7 @@ const MyAnimals = ({ authToken }) => {
             // No isOwned param: matches the main site's My Animals fetch, which loads everything
             // the user created (archived excluded server-side by default) and then separates
             // owned vs. not-owned client-side so the toggle doesn't require a refetch.
-            const response = await axios.get(`${API_BASE_URL}/animals`, {
-                headers: { Authorization: `Bearer ${authToken}` },
-            });
+            const response = await apiClient.get('/animals');
             const data = Array.isArray(response.data) ? response.data : [];
             // isViewOnly = creatorId !== requesting user, i.e. transferred-in/out animals.
             setAnimals(data.filter((a) => !a.isViewOnly));

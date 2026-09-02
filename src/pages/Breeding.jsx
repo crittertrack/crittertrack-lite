@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Baby, Plus, Check, Calendar, ScanHeart, Hourglass, ChevronDown, X, Search, ScrollText } from 'lucide-react';
 import TopBar from '../components/TopBar';
@@ -9,8 +9,6 @@ import PedigreeChart from '../components/PedigreeChart';
 import { API_BASE_URL } from '../utils/apiConfig';
 import { formatDate, litterAge } from '../utils/dateFormatter';
 import { getVariety } from '../utils/variety';
-
-const authHeaders = (authToken) => ({ headers: { Authorization: `Bearer ${authToken}` } });
 
 // Same stage rules as the main site's LitterManagement: Planned -> Mated -> Pregnant -> Born,
 // with Weaned tracked separately once born (see handleMarkAs* in crittertrack-frontend).
@@ -79,7 +77,7 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
     useEffect(() => {
         if (!expanded || offspring !== null || !litter.litter_id_public) return;
         setLoadingOffspring(true);
-        axios.get(`${API_BASE_URL}/litters/${litter.litter_id_public}/offspring`, authHeaders(authToken))
+        apiClient.get(`/litters/${litter.litter_id_public}/offspring`)
             .then((res) => setOffspring(Array.isArray(res.data) ? res.data : []))
             .catch(() => setOffspring([]))
             .finally(() => setLoadingOffspring(false));
@@ -96,7 +94,7 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
         if (idsToFetch.length === 0) return;
         idsToFetch.forEach((cid) => {
             setOwnerNames((prev) => ({ ...prev, [cid]: null })); // mark as loading
-            axios.get(`${API_BASE_URL}/public/profile/${cid}`)
+            apiClient.get(`/public/profile/${cid}`)
                 .then((res) => setOwnerNames((prev) => ({ ...prev, [cid]: res.data?.breederName || res.data?.personalName || cid })))
                 .catch(() => setOwnerNames((prev) => ({ ...prev, [cid]: cid })));
         });
@@ -106,7 +104,7 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
     const markMated = async () => {
         setBusy(true);
         try {
-            await axios.put(`${API_BASE_URL}/litters/${litter._id}`, { matingDate: new Date().toISOString(), isPlanned: false }, authHeaders(authToken));
+            await apiClient.put(`/litters/${litter._id}`, { matingDate: new Date().toISOString(), isPlanned: false });
             onUpdated();
         } finally { setBusy(false); }
     };
@@ -115,9 +113,9 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
         setBusy(true);
         try {
             await Promise.all([
-                axios.put(`${API_BASE_URL}/litters/${litter._id}`, { pregnancyDate: new Date().toISOString() }, authHeaders(authToken)),
+                apiClient.put(`/litters/${litter._id}`, { pregnancyDate: new Date().toISOString() }),
                 litter.damId_public
-                    ? axios.put(`${API_BASE_URL}/animals/${litter.damId_public}`, { isPregnant: true, isInMating: false }, authHeaders(authToken))
+                    ? apiClient.put(`/animals/${litter.damId_public}`, { isPregnant: true, isInMating: false })
                     : Promise.resolve(),
             ]);
             onUpdated();
@@ -129,9 +127,9 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
         setSavingBirthDate(true);
         try {
             await Promise.all([
-                axios.put(`${API_BASE_URL}/litters/${litter._id}`, { birthDate: dateStr }, authHeaders(authToken)),
+                apiClient.put(`/litters/${litter._id}`, { birthDate: dateStr }),
                 litter.damId_public
-                    ? axios.put(`${API_BASE_URL}/animals/${litter.damId_public}`, { isPregnant: false, isNursing: true }, authHeaders(authToken))
+                    ? apiClient.put(`/animals/${litter.damId_public}`, { isPregnant: false, isNursing: true })
                     : Promise.resolve(),
             ]);
             setShowBirthInput(false);
@@ -143,9 +141,9 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
         setBusy(true);
         try {
             await Promise.all([
-                axios.put(`${API_BASE_URL}/litters/${litter._id}`, { weaningDate: new Date().toISOString(), weaningConfirmed: true }, authHeaders(authToken)),
+                apiClient.put(`/litters/${litter._id}`, { weaningDate: new Date().toISOString(), weaningConfirmed: true }),
                 litter.damId_public
-                    ? axios.put(`${API_BASE_URL}/animals/${litter.damId_public}`, { isNursing: false }, authHeaders(authToken))
+                    ? apiClient.put(`/animals/${litter.damId_public}`, { isNursing: false })
                     : Promise.resolve(),
             ]);
             onUpdated();
@@ -319,7 +317,7 @@ const AddMatingModal = ({ authToken, onClose, onCreated }) => {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        axios.get(`${API_BASE_URL}/animals`, authHeaders(authToken))
+        apiClient.get('/animals')
             .then((res) => setAnimals((Array.isArray(res.data) ? res.data : []).filter((a) => !a.isViewOnly)))
             .catch(() => setAnimals([]))
             .finally(() => setLoadingAnimals(false));
@@ -358,9 +356,9 @@ const AddMatingModal = ({ authToken, onClose, onCreated }) => {
                 payload.pregnancyDate = matingDate || birthDate;
                 payload.birthDate = birthDate;
             }
-            const res = await axios.post(`${API_BASE_URL}/litters`, payload, authHeaders(authToken));
+            const res = await apiClient.post('/litters', payload);
             if (alreadyBorn) {
-                await axios.put(`${API_BASE_URL}/animals/${damId}`, { isPregnant: false, isNursing: true }, authHeaders(authToken));
+                await apiClient.put(`/animals/${damId}`, { isPregnant: false, isNursing: true });
             }
             onCreated(res.data);
         } catch (err) {
@@ -445,7 +443,7 @@ const Breeding = ({ authToken, userProfile }) => {
     const fetchLitters = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`${API_BASE_URL}/litters`, authHeaders(authToken));
+            const res = await apiClient.get('/litters');
             setLitters(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error('Failed to fetch litters:', error);
@@ -472,9 +470,9 @@ const Breeding = ({ authToken, userProfile }) => {
         const litter = addOffspringLitter;
         setAddOffspringLitter(null);
         try {
-            await axios.put(`${API_BASE_URL}/litters/${litter._id}`, {
+            await apiClient.put(`/litters/${litter._id}`, {
                 offspringIds_public: [...(litter.offspringIds_public || []), newAnimal.id_public],
-            }, authHeaders(authToken));
+            });
         } catch (error) {
             console.error('Failed to link offspring to litter:', error);
         }

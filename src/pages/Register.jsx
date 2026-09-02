@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { Loader2, UserPlus, Mail, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import logo from '../assets/lite-logo.png';
-import { API_BASE_URL } from '../utils/apiConfig';
 import ThemeToggle from '../components/ThemeToggle';
 
 // Mirrors crittertrack-frontend's AuthView two-step registration: request a verification
@@ -29,7 +28,7 @@ const Register = ({ onRegistered, onBack }) => {
         }
         setLoading(true);
         try {
-            await axios.post(`${API_BASE_URL}/auth/register-request`, {
+            await apiClient.post('/auth/register-request', {
                 email, password, personalName, breederName: breederName || undefined,
             });
             setInfo('Verification code sent — check your email.');
@@ -46,7 +45,7 @@ const Register = ({ onRegistered, onBack }) => {
         setError('');
         setLoading(true);
         try {
-            const res = await axios.post(`${API_BASE_URL}/auth/verify-email`, { email, code });
+            const res = await apiClient.post('/auth/verify-email', { email, code });
             onRegistered(res.data.token);
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid or expired verification code.');

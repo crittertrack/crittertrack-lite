@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { X, Loader2, Plus, Trash2, Home } from 'lucide-react';
 import AnimalImage from './shared/AnimalImage';
-import { API_BASE_URL } from '../utils/apiConfig';
-
-const authHeaders = (authToken) => ({ headers: { Authorization: `Bearer ${authToken}` } });
 
 // Quick assign/remove animals for a single enclosure — opened from the Enclosures overview.
 const EnclosureDetailModal = ({ enclosure, authToken, onClose, onChanged }) => {
@@ -17,7 +14,7 @@ const EnclosureDetailModal = ({ enclosure, authToken, onClose, onChanged }) => {
     const fetchAnimals = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`${API_BASE_URL}/animals`, authHeaders(authToken));
+            const res = await apiClient.get('/animals');
             // isViewOnly = transferred-in animal the user doesn't actually own (archived is
             // already excluded server-side).
             setAllAnimals((Array.isArray(res.data) ? res.data : []).filter((a) => !a.isViewOnly));
@@ -37,7 +34,7 @@ const EnclosureDetailModal = ({ enclosure, authToken, onClose, onChanged }) => {
     const assign = async (animal) => {
         setBusyId(animal.id_public);
         try {
-            await axios.put(`${API_BASE_URL}/animals/${animal.id_public}`, { enclosureId: enclosure._id }, authHeaders(authToken));
+            await apiClient.put(`/animals/${animal.id_public}`, { enclosureId: enclosure._id });
             await fetchAnimals();
             onChanged && onChanged();
         } finally { setBusyId(null); }
@@ -46,7 +43,7 @@ const EnclosureDetailModal = ({ enclosure, authToken, onClose, onChanged }) => {
     const remove = async (animal) => {
         setBusyId(animal.id_public);
         try {
-            await axios.put(`${API_BASE_URL}/animals/${animal.id_public}`, { enclosureId: null }, authHeaders(authToken));
+            await apiClient.put(`/animals/${animal.id_public}`, { enclosureId: null });
             await fetchAnimals();
             onChanged && onChanged();
         } finally { setBusyId(null); }

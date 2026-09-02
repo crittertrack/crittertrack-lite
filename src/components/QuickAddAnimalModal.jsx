@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { X, Loader2, ChevronLeft, Search, Plus, Camera, Cat } from 'lucide-react';
-import { API_BASE_URL } from '../utils/apiConfig';
 import { getSpeciesCategory, getAppearanceFields } from '../utils/appearanceFields';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Intersex', 'Mixed', 'Unknown'];
@@ -37,9 +36,9 @@ const QuickAddAnimalModal = ({ authToken, onClose, onCreated, initialValues = {}
 
     useEffect(() => {
         Promise.all([
-            axios.get(`${API_BASE_URL}/species`).catch(() => ({ data: [] })),
+            apiClient.get('/species').catch(() => ({ data: [] })),
             authToken
-                ? axios.get(`${API_BASE_URL}/animals`, { headers: { Authorization: `Bearer ${authToken}` } }).catch(() => ({ data: [] }))
+                ? apiClient.get('/animals').catch(() => ({ data: [] }))
                 : Promise.resolve({ data: [] }),
         ]).then(([speciesRes, animalsRes]) => {
             setAllSpecies(Array.isArray(speciesRes.data) ? speciesRes.data : []);
@@ -89,15 +88,11 @@ const QuickAddAnimalModal = ({ authToken, onClose, onCreated, initialValues = {}
                 const fd = new FormData();
                 fd.append('file', imageFile);
                 fd.append('type', 'animal');
-                const uploadRes = await axios.post(`${API_BASE_URL}/upload`, fd, {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                });
+                const uploadRes = await apiClient.post('/upload', fd);
                 const url = uploadRes.data?.url;
                 if (url) { payload.imageUrl = url; payload.photoUrl = url; }
             }
-            const response = await axios.post(`${API_BASE_URL}/animals`, payload, {
-                headers: { Authorization: `Bearer ${authToken}` }
-            });
+            const response = await apiClient.post('/animals', payload);
             onCreated(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to add animal.');

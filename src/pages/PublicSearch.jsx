@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
-import { API_BASE_URL } from '../utils/apiConfig';
 
 const PublicSearch = () => {
     const navigate = useNavigate();
@@ -17,7 +16,7 @@ const PublicSearch = () => {
         if (!term.trim()) { setResults([]); setSearched(false); return; }
         setLoading(true);
         try {
-            const response = await axios.get(`${API_BASE_URL}/public/global/animals`, { params: { name: term.trim(), limit: 30 } });
+            const response = await apiClient.get('/public/global/animals', { params: { name: term.trim(), limit: 30 } });
             setResults(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Failed to search public animals:', error);

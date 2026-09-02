@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { X, Loader2, Search } from 'lucide-react';
-import { API_BASE_URL } from '../utils/apiConfig';
 
 // Searches public breeder/owner profiles by name or CTUID, for linking Breeder/Owner
 // fields on AnimalDetail.jsx (mirrors ParentPickerModal.jsx's search-and-select pattern).
@@ -18,7 +17,7 @@ const ProfilePickerModal = ({ title, onSelect, onClose }) => {
         setLoading(true);
         setSearched(true);
         try {
-            const res = await axios.get(`${API_BASE_URL}/public/profiles/search`, { params: { query: q, limit: 20 } });
+            const res = await apiClient.get('/public/profiles/search', { params: { query: q, limit: 20 } });
             setResults(Array.isArray(res.data) ? res.data : []);
         } catch {
             setResults([]);

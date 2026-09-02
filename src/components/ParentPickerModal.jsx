@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { X, Loader2, Search } from 'lucide-react';
 import AnimalImage from './shared/AnimalImage';
-import { API_BASE_URL } from '../utils/apiConfig';
 
 // Searches the user's own animals + the public global directory (same pattern as PublicSearch.jsx),
 // for assigning an existing animal as a sire/dam on AnimalDetail.jsx's Pedigree tab.
@@ -20,8 +19,8 @@ const ParentPickerModal = ({ title, requiredGenders, currentAnimalId, authToken,
         setSearched(true);
         try {
             const [ownRes, globalRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/animals`, { params: { name: q }, headers: { Authorization: `Bearer ${authToken}` } }).catch(() => ({ data: [] })),
-                axios.get(`${API_BASE_URL}/public/global/animals`, { params: { name: q, limit: 20 } }).catch(() => ({ data: [] })),
+                apiClient.get('/animals', { params: { name: q } }).catch(() => ({ data: [] })),
+                apiClient.get('/public/global/animals', { params: { name: q, limit: 20 } }).catch(() => ({ data: [] })),
             ]);
             const own = (Array.isArray(ownRes.data) ? ownRes.data : []).map((a) => ({ ...a, _own: true }));
             const ownIds = new Set(own.map((a) => a.id_public));

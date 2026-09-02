@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, User, Camera, Check, KeyRound, Eye, EyeOff, LogOut, Bell, Sun, Moon, Monitor } from 'lucide-react';
 import TopBar from '../components/TopBar';
-import { API_BASE_URL } from '../utils/apiConfig';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Mirrors the relevant parts of crittertrack-frontend's ProfileEditForm (basic info, privacy
@@ -34,7 +33,7 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
     const [pushPreferences, setPushPreferences] = useState({});
 
     useEffect(() => {
-        axios.get(`${API_BASE_URL}/push/preferences`, { headers: { Authorization: `Bearer ${authToken}` } })
+        apiClient.get('/push/preferences')
             .then((r) => {
                 setPushCategories(r.data?.categories || []);
                 setPushPreferences(r.data?.preferences || {});
@@ -45,7 +44,7 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
     const handleTogglePushCategory = async (categoryId, value) => {
         setPushPreferences((prev) => ({ ...prev, [categoryId]: value }));
         try {
-            await axios.put(`${API_BASE_URL}/push/preferences`, { [categoryId]: value }, { headers: { Authorization: `Bearer ${authToken}` } });
+            await apiClient.put('/push/preferences', { [categoryId]: value });
         } catch {
             setPushPreferences((prev) => ({ ...prev, [categoryId]: !value }));
         }
@@ -69,15 +68,11 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
                 const fd = new FormData();
                 fd.append('file', imageFile);
                 fd.append('type', 'profile');
-                const uploadRes = await axios.post(`${API_BASE_URL}/upload`, fd, {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                });
+                const uploadRes = await apiClient.post('/upload', fd);
                 const url = uploadRes.data?.url || uploadRes.data?.path;
                 if (url) payload.profileImage = url;
             }
-            await axios.put(`${API_BASE_URL}/users/profile`, payload, {
-                headers: { Authorization: `Bearer ${authToken}` },
-            });
+            await apiClient.put('/users/profile', payload);
             setImageFile(null);
             setSaveMessage('Profile updated successfully.');
             onProfileUpdated?.();
@@ -102,9 +97,7 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
         }
         setPasswordSaving(true);
         try {
-            await axios.put(`${API_BASE_URL}/auth/change-password`, { currentPassword, newPassword }, {
-                headers: { Authorization: `Bearer ${authToken}` },
-            });
+            await apiClient.put('/auth/change-password', { currentPassword, newPassword });
             setPasswordMessage('Password changed successfully.');
             setCurrentPassword('');
             setNewPassword('');

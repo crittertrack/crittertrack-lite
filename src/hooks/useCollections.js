@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../utils/apiConfig';
-
-const authHeaders = (authToken) => ({ headers: { Authorization: `Bearer ${authToken}` } });
+import apiClient from '../utils/apiClient';
 
 // Shared collections state (definitions + animal assignments), synced to the same
 // GET/PUT /api/collections endpoint the main site uses, so Lite stays data-compatible.
@@ -15,7 +12,7 @@ export const useCollections = (authToken) => {
         if (!authToken) return;
         setLoading(true);
         try {
-            const res = await axios.get(`${API_BASE_URL}/collections`, authHeaders(authToken));
+            const res = await apiClient.get('/collections');
             setCollections(Array.isArray(res.data?.collections) ? res.data.collections : []);
             setAnimalMap((res.data?.animalMap && typeof res.data.animalMap === 'object') ? res.data.animalMap : {});
         } catch (error) {
@@ -30,7 +27,7 @@ export const useCollections = (authToken) => {
     const persist = useCallback((cols, map) => {
         setCollections(cols);
         setAnimalMap(map);
-        axios.put(`${API_BASE_URL}/collections`, { collections: cols, animalMap: map }, authHeaders(authToken))
+        apiClient.put('/collections', { collections: cols, animalMap: map })
             .catch((error) => console.error('Failed to save collections:', error));
     }, [authToken]);
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { downloadBlob } from '../utils/nativeDownload';
@@ -24,7 +24,7 @@ const resolveBreederName = async (animalInfo, API_BASE_URL) => {
     }
     if (!animalInfo.breederId_public) return;
     try {
-        const res = await axios.get(`${API_BASE_URL}/public/profiles/search?query=${animalInfo.breederId_public}&limit=1`);
+        const res = await apiClient.get(`/public/profiles/search?query=${animalInfo.breederId_public}&limit=1`);
         const breeder = res.data?.[0];
         if (!breeder) return;
         const showPersonalName = breeder.showPersonalName ?? false;
@@ -48,9 +48,7 @@ const fetchAnimalWithFamily = async (id, API_BASE_URL, authToken, depth = 0, cac
     if (cache.has(id)) return cache.get(id);
     let animalInfo = null;
     try {
-        const res = await axios.get(`${API_BASE_URL}/animals/any/${encodeURIComponent(id)}`, {
-            headers: { Authorization: `Bearer ${authToken}` }
-        });
+        const res = await apiClient.get(`/animals/any/${encodeURIComponent(id)}`);
         animalInfo = res.data;
     } catch {
         return null;
@@ -74,9 +72,7 @@ const fetchAnimalWithFamily = async (id, API_BASE_URL, authToken, depth = 0, cac
 const fetchLitterWithFamily = async (litterId, API_BASE_URL, authToken, currentUserIdPublic) => {
     let litterInfo = null;
     try {
-        const res = await axios.get(`${API_BASE_URL}/litters/${litterId}`, {
-            headers: { Authorization: `Bearer ${authToken}` }
-        });
+        const res = await apiClient.get(`/litters/${litterId}`);
         litterInfo = res.data;
     } catch {
         return null;

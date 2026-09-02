@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../utils/apiConfig';
+import apiClient from '../utils/apiClient';
 
 // Simplified version of crittertrack-frontend's useAppAuth — same backend/API, same
 // localStorage keys, so a token created by the main app also works here (and vice versa).
@@ -14,9 +13,7 @@ export function useAuth() {
     const fetchUserProfile = useCallback(async (token) => {
         if (!token) { setLoading(false); return; }
         try {
-            const response = await axios.get(`${API_BASE_URL}/users/profile`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.get('/users/profile');
             setUserProfile(response.data || {});
         } catch (error) {
             if (error.response?.status === 401 || error.response?.status === 403) {
@@ -41,7 +38,7 @@ export function useAuth() {
     }, []);
 
     const login = useCallback(async (email, password) => {
-        const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password, keepSignedIn: true });
+        const response = await apiClient.post('/auth/login', { email, password, keepSignedIn: true });
         completeAuth(response.data.token);
         return response.data;
     }, [completeAuth]);

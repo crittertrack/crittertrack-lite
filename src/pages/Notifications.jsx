@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Utensils, ClipboardList, HeartPulse, Baby, Check, ChevronRight, Bell, Home, Package } from 'lucide-react';
 import TopBar from '../components/TopBar';
-import { API_BASE_URL } from '../utils/apiConfig';
-
-const authHeaders = (authToken) => ({ headers: { Authorization: `Bearer ${authToken}` } });
 
 // Only the animal/management categories — messages/requests/system are the general
 // notification system (NotificationPanel on the main site) and out of scope here.
@@ -180,11 +177,11 @@ const Notifications = ({ authToken }) => {
         setLoading(true);
         try {
             const [animalsRes, littersRes, enclosuresRes, suppliesRes, generalTasksRes] = await Promise.all([
-                axios.get(`${API_BASE_URL}/animals`, authHeaders(authToken)),
-                axios.get(`${API_BASE_URL}/litters`, authHeaders(authToken)),
-                axios.get(`${API_BASE_URL}/enclosures`, authHeaders(authToken)),
-                axios.get(`${API_BASE_URL}/supplies`, authHeaders(authToken)),
-                axios.get(`${API_BASE_URL}/users/general-tasks`, authHeaders(authToken)),
+                apiClient.get('/animals'),
+                apiClient.get('/litters'),
+                apiClient.get('/enclosures'),
+                apiClient.get('/supplies'),
+                apiClient.get('/users/general-tasks'),
             ]);
             const animalData = Array.isArray(animalsRes.data) ? animalsRes.data : [];
             // No isOwned filter — matches NotificationsHub.jsx exactly: every non-archived,
@@ -207,7 +204,7 @@ const Notifications = ({ authToken }) => {
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
     useEffect(() => {
-        axios.get(`${API_BASE_URL}/push/preferences`, authHeaders(authToken))
+        apiClient.get('/push/preferences')
             .then((res) => setPrefs(res.data?.preferences || {}))
             .catch(() => setPrefs({}))
             .finally(() => setPrefsLoading(false));
@@ -217,7 +214,7 @@ const Notifications = ({ authToken }) => {
         const next = prefs[categoryId] === false ? true : false;
         setPrefs((p) => ({ ...p, [categoryId]: next }));
         try {
-            await axios.put(`${API_BASE_URL}/push/preferences`, { [categoryId]: next }, authHeaders(authToken));
+            await apiClient.put('/push/preferences', { [categoryId]: next });
         } catch (error) {
             console.error('Failed to update push preference:', error);
             setPrefs((p) => ({ ...p, [categoryId]: !next }));
@@ -232,7 +229,7 @@ const Notifications = ({ authToken }) => {
     const markFed = async (animal) => {
         setBusyKey(`feed-${animal.id_public}`);
         try {
-            await axios.put(`${API_BASE_URL}/animals/${animal.id_public}`, { lastFedDate: new Date().toISOString() }, authHeaders(authToken));
+            await apiClient.put(`/animals/${animal.id_public}`, { lastFedDate: new Date().toISOString() });
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -257,7 +254,7 @@ const Notifications = ({ authToken }) => {
         setBusyKey(key);
         try {
             const nextTasks = (animal.animalCareTasks || []).map((t, i) => i === idx ? { ...t, lastDoneDate: new Date().toISOString() } : t);
-            await axios.put(`${API_BASE_URL}/animals/${animal.id_public}`, { animalCareTasks: nextTasks }, authHeaders(authToken));
+            await apiClient.put(`/animals/${animal.id_public}`, { animalCareTasks: nextTasks });
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -266,7 +263,7 @@ const Notifications = ({ authToken }) => {
         setBusyKey(busyId);
         try {
             const field = { ...(animal[key] || {}), lastDoneDate: new Date().toISOString(), lastSkipped: false };
-            await axios.put(`${API_BASE_URL}/animals/${animal.id_public}`, { [key]: field }, authHeaders(authToken));
+            await apiClient.put(`/animals/${animal.id_public}`, { [key]: field });
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -287,7 +284,7 @@ const Notifications = ({ authToken }) => {
         setBusyKey(`gtask-${task.id}`);
         try {
             const nextTasks = generalCareTasks.map((t) => t.id === task.id ? { ...t, lastDoneDate: new Date().toISOString(), lastSkipped: false } : t);
-            await axios.put(`${API_BASE_URL}/users/general-tasks`, { generalCareTasks: nextTasks }, authHeaders(authToken));
+            await apiClient.put('/users/general-tasks', { generalCareTasks: nextTasks });
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -303,7 +300,7 @@ const Notifications = ({ authToken }) => {
     const clearQuarantine = async (animal) => {
         setBusyKey(`quarantine-${animal.id_public}`);
         try {
-            await axios.put(`${API_BASE_URL}/animals/${animal.id_public}`, { quarantineDetails: { ...animal.quarantineDetails, status: 'None' } }, authHeaders(authToken));
+            await apiClient.put(`/animals/${animal.id_public}`, { quarantineDetails: { ...animal.quarantineDetails, status: 'None' } });
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -331,7 +328,7 @@ const Notifications = ({ authToken }) => {
         setBusyKey(key);
         try {
             const nextTasks = (enclosure.cleaningTasks || []).map((t, i) => i === idx ? { ...t, lastDoneDate: new Date().toISOString() } : t);
-            await axios.patch(`${API_BASE_URL}/enclosures/${enclosure._id}`, { cleaningTasks: nextTasks }, authHeaders(authToken));
+            await apiClient.patch(`/enclosures/${enclosure._id}`, { cleaningTasks: nextTasks });
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -348,7 +345,7 @@ const Notifications = ({ authToken }) => {
                 else base.setMonth(base.getMonth() + Number(supply.orderFrequency));
                 patch.nextOrderDate = base.toISOString().split('T')[0];
             }
-            await axios.patch(`${API_BASE_URL}/supplies/${supply._id}`, patch, authHeaders(authToken));
+            await apiClient.patch(`/supplies/${supply._id}`, patch);
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -372,7 +369,7 @@ const Notifications = ({ authToken }) => {
     const markMated = async (litter) => {
         setBusyKey(`mate-${litter._id}`);
         try {
-            await axios.put(`${API_BASE_URL}/litters/${litter._id}`, { matingDate: new Date().toISOString(), isPlanned: false }, authHeaders(authToken));
+            await apiClient.put(`/litters/${litter._id}`, { matingDate: new Date().toISOString(), isPlanned: false });
             fetchAll();
         } finally { setBusyKey(null); }
     };
@@ -380,9 +377,9 @@ const Notifications = ({ authToken }) => {
         setBusyKey(`born-${litter._id}`);
         try {
             await Promise.all([
-                axios.put(`${API_BASE_URL}/litters/${litter._id}`, { birthDate: new Date().toISOString() }, authHeaders(authToken)),
+                apiClient.put(`/litters/${litter._id}`, { birthDate: new Date().toISOString() }),
                 litter.damId_public
-                    ? axios.put(`${API_BASE_URL}/animals/${litter.damId_public}`, { isPregnant: false, isNursing: true }, authHeaders(authToken))
+                    ? apiClient.put(`/animals/${litter.damId_public}`, { isPregnant: false, isNursing: true })
                     : Promise.resolve(),
             ]);
             fetchAll();
@@ -392,9 +389,9 @@ const Notifications = ({ authToken }) => {
         setBusyKey(`wean-${litter._id}`);
         try {
             await Promise.all([
-                axios.put(`${API_BASE_URL}/litters/${litter._id}`, { weaningDate: new Date().toISOString(), weaningConfirmed: true }, authHeaders(authToken)),
+                apiClient.put(`/litters/${litter._id}`, { weaningDate: new Date().toISOString(), weaningConfirmed: true }),
                 litter.damId_public
-                    ? axios.put(`${API_BASE_URL}/animals/${litter.damId_public}`, { isNursing: false }, authHeaders(authToken))
+                    ? apiClient.put(`/animals/${litter.damId_public}`, { isNursing: false })
                     : Promise.resolve(),
             ]);
             fetchAll();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import apiClient from '../utils/apiClient';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Pencil, Check, X, Mars, Venus, ScrollText, Heart, HeartOff, Eye, EyeOff, Plus, Download, ChevronDown } from 'lucide-react';
 import TopBar from '../components/TopBar';
@@ -35,8 +35,6 @@ const BADGE_STYLES = {
     Pregnant: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
 };
 
-const authHeaders = (authToken) => ({ headers: { Authorization: `Bearer ${authToken}` } });
-
 const AnimalDetail = ({ authToken, userProfile }) => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -70,7 +68,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         try {
             // /any/ falls back to public/minimal data for animals the viewer doesn't own,
             // so pedigree parent/offspring navigation works for non-owned animals too.
-            const response = await axios.get(`${API_BASE_URL}/animals/any/${id}`, authHeaders(authToken));
+            const response = await apiClient.get(`/animals/any/${id}`);
             setAnimal(response.data);
             setForm(response.data);
         } catch (error) {
@@ -88,7 +86,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         const fetchOne = async (pid) => {
             if (!pid) return null;
             try {
-                const res = await axios.get(`${API_BASE_URL}/animals/any/${pid}`, authHeaders(authToken));
+                const res = await apiClient.get(`/animals/any/${pid}`);
                 return res.data;
             } catch { return null; }
         };
@@ -105,7 +103,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         const resolve = async (ctuid) => {
             if (!ctuid) return null;
             try {
-                const res = await axios.get(`${API_BASE_URL}/public/profiles/search`, { params: { query: ctuid, limit: 1 } });
+                const res = await apiClient.get('/public/profiles/search', { params: { query: ctuid, limit: 1 } });
                 return Array.isArray(res.data) ? res.data[0] || null : null;
             } catch { return null; }
         };
@@ -138,19 +136,19 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     useEffect(() => {
         if (!animal || tab !== 'Pedigree') return;
         // Pedigree-based offspring not tracked by any Litter Management record.
-        axios.get(`${API_BASE_URL}/animals/${id}/offspring`, authHeaders(authToken))
+        apiClient.get(`/animals/${id}/offspring`)
             .then((res) => setOffspringGroups(Array.isArray(res.data) ? res.data : []))
             .catch(() => setOffspringGroups([]));
         // Litter Management records referencing this animal (own, or others' if visible),
         // each with its own offspring list fetched separately by litter_id_public.
-        axios.get(`${API_BASE_URL}/litters/for-animal/${id}`, authHeaders(authToken))
+        apiClient.get(`/litters/for-animal/${id}`)
             .then((res) => {
                 const litters = Array.isArray(res.data) ? res.data : [];
                 setAnimalLitters(litters);
                 litters.forEach((litter) => {
                     const lid = litter.litter_id_public;
                     if (!lid || !(litter.offspringIds_public || []).length) return;
-                    axios.get(`${API_BASE_URL}/litters/${lid}/offspring`, authHeaders(authToken))
+                    apiClient.get(`/litters/${lid}/offspring`)
                         .then((r) => setLitterOffspringMap((prev) => ({ ...prev, [lid]: Array.isArray(r.data) ? r.data : [] })))
                         .catch(() => setLitterOffspringMap((prev) => ({ ...prev, [lid]: [] })));
                 });
@@ -160,14 +158,14 @@ const AnimalDetail = ({ authToken, userProfile }) => {
 
     useEffect(() => {
         if (!animal?.enclosureId) { setEnclosureName(null); return; }
-        axios.get(`${API_BASE_URL}/enclosures/${animal.enclosureId}`, authHeaders(authToken))
+        apiClient.get(`/enclosures/${animal.enclosureId}`)
             .then((res) => setEnclosureName(res.data?.name || null))
             .catch(() => setEnclosureName(null));
     }, [animal?.enclosureId, authToken]);
 
     useEffect(() => {
         if (!animal?.id_public) return;
-        axios.get(`${API_BASE_URL}/animals/${animal.id_public}/inbreeding`, authHeaders(authToken))
+        apiClient.get(`/animals/${animal.id_public}/inbreeding`)
             .then((res) => setInbreeding(res.data))
             .catch(() => setInbreeding(null));
     }, [animal?.id_public, authToken]);
@@ -189,7 +187,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                 delete payload.isPregnant;
                 delete payload.isNursing;
             }
-            const response = await axios.put(`${API_BASE_URL}/animals/${id}`, payload, authHeaders(authToken));
+            const response = await apiClient.put(`/animals/${id}`, payload);
             setAnimal(response.data);
             setForm(response.data);
             setEditing(false);
@@ -205,7 +203,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         const newValue = !(animal.isOwned !== false);
         setAnimal((a) => ({ ...a, isOwned: newValue }));
         try {
-            await axios.put(`${API_BASE_URL}/animals/${id}`, { isOwned: newValue }, authHeaders(authToken));
+            await apiClient.put(`/animals/${id}`, { isOwned: newValue });
         } catch (error) {
             console.error('Failed to update owned status:', error);
             setAnimal((a) => ({ ...a, isOwned: !newValue })); // revert on failure
@@ -216,7 +214,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         const newValue = !animal.isDisplay;
         setAnimal((a) => ({ ...a, isDisplay: newValue }));
         try {
-            await axios.put(`${API_BASE_URL}/animals/${id}`, { isDisplay: newValue }, authHeaders(authToken));
+            await apiClient.put(`/animals/${id}`, { isDisplay: newValue });
         } catch (error) {
             console.error('Failed to update public status:', error);
             setAnimal((a) => ({ ...a, isDisplay: !newValue })); // revert on failure
@@ -228,7 +226,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     const handleAssignParent = async (role, selectedAnimal) => {
         const key = role === 'sire' ? 'sireId_public' : 'damId_public';
         try {
-            const response = await axios.put(`${API_BASE_URL}/animals/${id}`, { [key]: selectedAnimal ? selectedAnimal.id_public : null }, authHeaders(authToken));
+            const response = await apiClient.put(`/animals/${id}`, { [key]: selectedAnimal ? selectedAnimal.id_public : null });
             setAnimal(response.data);
             setForm(response.data);
             setParents((p) => ({ ...p, [role]: selectedAnimal || null }));
@@ -249,7 +247,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     const persistPhotos = async (newPhotos) => {
         const [primary, ...rest] = newPhotos;
         const payload = { imageUrl: primary || null, photoUrl: primary || null, extraImages: rest };
-        const response = await axios.put(`${API_BASE_URL}/animals/${id}`, payload, authHeaders(authToken));
+        const response = await apiClient.put(`/animals/${id}`, payload);
         setAnimal(response.data);
         setForm(response.data);
     };
@@ -265,7 +263,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                 const fd = new FormData();
                 fd.append('file', file);
                 fd.append('type', 'animal');
-                const res = await axios.post(`${API_BASE_URL}/upload`, fd, authHeaders(authToken));
+                const res = await apiClient.post('/upload', fd);
                 return res.data?.url;
             }));
             await persistPhotos([...photos, ...uploaded.filter(Boolean)]);
