@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { downloadBlob } from '../utils/nativeDownload';
 import { X, Mars, Venus, Download, Image as ImageIcon, Loader2, Cat } from 'lucide-react';
 import AnimalImage from './shared/AnimalImage';
 import { formatDate } from '../utils/dateFormatter';
@@ -354,10 +355,9 @@ const PedigreeChart = ({ animalId, litterId = null, currentUserIdPublic = null, 
         try {
             const canvas = await capture();
             if (!canvas) return;
-            const link = document.createElement('a');
-            link.download = `pedigree-${fileNameBase}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) return;
+            await downloadBlob(blob, `pedigree-${fileNameBase}.png`);
         } finally { setIsSaving(false); }
     };
 
@@ -373,7 +373,8 @@ const PedigreeChart = ({ animalId, litterId = null, currentUserIdPublic = null, 
             const drawH = canvas.height * ratio;
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [pageW, drawH + pad * 2] });
             pdf.addImage(canvas.toDataURL('image/png'), 'PNG', pad, pad, drawW, drawH);
-            pdf.save(`pedigree-${fileNameBase}.pdf`);
+            const blob = pdf.output('blob');
+            await downloadBlob(blob, `pedigree-${fileNameBase}.pdf`);
         } finally { setIsSaving(false); }
     };
 
