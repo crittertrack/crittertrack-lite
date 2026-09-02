@@ -1,0 +1,84 @@
+import React, { useState, useCallback } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { Search, Loader2 } from 'lucide-react';
+import TopBar from '../components/TopBar';
+import AnimalImage from '../components/shared/AnimalImage';
+import { API_BASE_URL } from '../utils/apiConfig';
+
+const PublicSearch = () => {
+    const navigate = useNavigate();
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [searched, setSearched] = useState(false);
+
+    const runSearch = useCallback(async (term) => {
+        if (!term.trim()) { setResults([]); setSearched(false); return; }
+        setLoading(true);
+        try {
+            const response = await axios.get(`${API_BASE_URL}/public/global/animals`, { params: { name: term.trim(), limit: 30 } });
+            setResults(Array.isArray(response.data) ? response.data : []);
+        } catch (error) {
+            console.error('Failed to search public animals:', error);
+            setResults([]);
+        } finally {
+            setLoading(false);
+            setSearched(true);
+        }
+    }, []);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        runSearch(query);
+    };
+
+    return (
+        <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+            <TopBar title="Search Public Animals" onBack={() => navigate(-1)} />
+
+            <form onSubmit={handleSubmit} className="px-4 pt-3">
+                <div className="flex items-center gap-2 bg-white rounded-full px-3 py-2 shadow-sm">
+                    <Search size={16} className="text-gray-400" />
+                    <input
+                        autoFocus
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search by name or ID..."
+                        className="flex-1 text-sm outline-none bg-transparent"
+                    />
+                </div>
+            </form>
+
+            <div className="px-4 pt-3 space-y-2.5">
+                {loading ? (
+                    <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
+                ) : !searched ? (
+                    <p className="text-center text-gray-400 text-sm py-16">Search for another breeder's public animals by name or ID.</p>
+                ) : results.length === 0 ? (
+                    <p className="text-center text-gray-400 text-sm py-16">No public animals found.</p>
+                ) : (
+                    results.map((a) => (
+                        <button
+                            key={a.id_public}
+                            onClick={() => navigate(`/animals/${a.id_public}`)}
+                            className="w-full flex items-center gap-3 bg-white rounded-xl p-2.5 shadow-sm text-left"
+                        >
+                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                                <AnimalImage src={a.imageUrl || a.photoUrl} alt={a.name} iconSize={18} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-800 truncate">
+                                    {[a.prefix, a.name || 'Unnamed', a.suffix].filter(Boolean).join(' ')}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">{a.species} • {a.id_public}</p>
+                            </div>
+                        </button>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default PublicSearch;

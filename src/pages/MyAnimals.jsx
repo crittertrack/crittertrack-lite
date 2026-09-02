@@ -1,0 +1,205 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import axios from 'axios';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, Plus, Loader2 } from 'lucide-react';
+import TopBar from '../components/TopBar';
+import AnimalCard from '../components/AnimalCard';
+import QuickAddAnimalModal from '../components/QuickAddAnimalModal';
+import { API_BASE_URL } from '../utils/apiConfig';
+import { parseLocalDate } from '../utils/dateFormatter';
+import { useCollections } from '../hooks/useCollections';
+
+const GENDER_OPTIONS = ['All Genders', 'Male', 'Female', 'Intersex', 'Mixed', 'Unknown'];
+const STATUS_OPTIONS = ['All Statuses', 'Pet', 'Growout', 'Breeder', 'Available', 'Booked', 'Retired', 'Deceased', 'Rehomed', 'Unknown'];
+const SORT_OPTIONS = [
+    { key: 'name-asc', label: 'Name (A-Z)' },
+    { key: 'name-desc', label: 'Name (Z-A)' },
+    { key: 'age-asc', label: 'Age (Youngest)' },
+    { key: 'age-desc', label: 'Age (Oldest)' },
+];
+
+// Collection keys match Collections.jsx so /animals?collection=X can be deep-linked into.
+
+const MyAnimals = ({ authToken }) => {
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const collectionKey = searchParams.get('collection');
+    const { collections, animalMap } = useCollections(authToken);
+
+    const [animals, setAnimals] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [ownedMode, setOwnedMode] = useState('owned'); // 'owned' | 'all'
+    const [search, setSearch] = useState('');
+    const [speciesFilter, setSpeciesFilter] = useState('All Species');
+    const [genderFilter, setGenderFilter] = useState('All Genders');
+    const [statusFilter, setStatusFilter] = useState('All Statuses');
+    const [sortBy, setSortBy] = useState('age-asc');
+    const [showAdd, setShowAdd] = useState(false);
+
+    const fetchAnimals = useCallback(async () => {
+        if (!authToken) return;
+        setLoading(true);
+        try {
+            // No isOwned param: matches the main site's My Animals fetch, which loads everything
+            // the user created (archived excluded server-side by default) and then separates
+            // owned vs. not-owned client-side so the toggle doesn't require a refetch.
+            const response = await axios.get(`${API_BASE_URL}/animals`, {
+                headers: { Authorization: `Bearer ${authToken}` },
+            });
+            const data = Array.isArray(response.data) ? response.data : [];
+            // isViewOnly = creatorId !== requesting user, i.e. transferred-in/out animals.
+            setAnimals(data.filter((a) => !a.isViewOnly));
+        } catch (error) {
+            console.error('Failed to fetch animals:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [authToken]);
+
+    useEffect(() => { fetchAnimals(); }, [fetchAnimals]);
+
+    const speciesOptions = useMemo(() => {
+        const unique = Array.from(new Set(animals.map((a) => a.species).filter(Boolean))).sort();
+        return ['All Species', ...unique];
+    }, [animals]);
+
+    // Count reflects only the owned/all toggle, not the species/gender/status/search filters below.
+    const totalCount = useMemo(() => (
+        ownedMode === 'owned' ? animals.filter((a) => a.isOwned !== false).length : animals.length
+    ), [animals, ownedMode]);
+
+    const filtered = useMemo(() => {
+        // 'owned' hides animals manually marked isOwned:false (e.g. pedigree placeholder
+        // ancestors); 'all' shows everything the user created, still minus transferred/archived.
+        let list = ownedMode === 'owned' ? animals.filter((a) => a.isOwned !== false) : animals;
+        if (collectionKey) {
+            list = list.filter((a) => (animalMap[a.id_public] || []).includes(collectionKey));
+        }
+        if (speciesFilter !== 'All Species') list = list.filter((a) => a.species === speciesFilter);
+        if (genderFilter !== 'All Genders') list = list.filter((a) => a.gender === genderFilter);
+        if (statusFilter !== 'All Statuses') list = list.filter((a) => a.status === statusFilter);
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            list = list.filter((a) =>
+                [a.name, a.prefix, a.suffix, a.species, a.id_public].filter(Boolean).some((v) => v.toLowerCase().includes(q))
+            );
+        }
+
+        const displayName = (a) => [a.prefix, a.name, a.suffix].filter(Boolean).join(' ').toLowerCase();
+        const birthTime = (a) => (a.birthDate ? parseLocalDate(a.birthDate).getTime() : null);
+
+        const sorted = [...list].sort((a, b) => {
+            if (sortBy === 'name-asc') return displayName(a).localeCompare(displayName(b));
+            if (sortBy === 'name-desc') return displayName(b).localeCompare(displayName(a));
+            const aTime = birthTime(a);
+            const bTime = birthTime(b);
+            if (aTime === null && bTime === null) return 0;
+            if (aTime === null) return 1; // unknown age sorts last
+            if (bTime === null) return -1;
+            // Youngest = most recent birthDate first; Oldest = earliest birthDate first.
+            return sortBy === 'age-asc' ? bTime - aTime : aTime - bTime;
+        });
+        return sorted;
+    }, [animals, ownedMode, speciesFilter, genderFilter, statusFilter, sortBy, search, collectionKey, animalMap]);
+
+    return (
+        <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+            <TopBar
+                title={collectionKey ? (collections.find((c) => c.id === collectionKey)?.name || 'Collection') : `My Animals (${totalCount})`}
+                onBack={collectionKey ? () => { searchParams.delete('collection'); setSearchParams(searchParams); } : undefined}
+                safeAreaTop={false}
+                right={
+                    !collectionKey && (
+                        <div className="flex items-center gap-2">
+                            <div className="flex bg-white/20 rounded-full p-0.5 text-xs font-semibold">
+                                {['owned', 'all'].map((mode) => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => setOwnedMode(mode)}
+                                        className={`px-3 py-1 rounded-full capitalize transition ${ownedMode === mode ? 'bg-white text-accent' : 'text-white'}`}
+                                    >
+                                        {mode}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                }
+            />
+
+            <div className="px-4 pt-3 space-y-3">
+                <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search animals…"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white shadow-sm text-sm focus:outline-none"
+                    />
+                </div>
+
+                {!collectionKey && (
+                    <div className="grid grid-cols-2 gap-2">
+                        <select
+                            value={speciesFilter}
+                            onChange={(e) => setSpeciesFilter(e.target.value)}
+                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                        >
+                            {speciesOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <select
+                            value={genderFilter}
+                            onChange={(e) => setGenderFilter(e.target.value)}
+                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                        >
+                            {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                        >
+                            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                        >
+                            {SORT_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+                        </select>
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
+                ) : filtered.length === 0 ? (
+                    <div className="text-center py-16 text-gray-400 text-sm">No animals found.</div>
+                ) : (
+                    <div className="space-y-2">
+                        {filtered.map((animal) => (
+                            <AnimalCard key={animal.id_public} animal={animal} onClick={() => navigate(`/animals/${animal.id_public}`)} />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <button
+                onClick={() => setShowAdd(true)}
+                className="fixed bottom-20 right-4 bg-accent text-white rounded-full shadow-lg px-4 py-3 flex items-center gap-2 font-semibold text-sm z-20"
+            >
+                <Plus size={18} /> Add Animal
+            </button>
+
+            {showAdd && (
+                <QuickAddAnimalModal
+                    authToken={authToken}
+                    onClose={() => setShowAdd(false)}
+                    onCreated={() => { setShowAdd(false); fetchAnimals(); }}
+                />
+            )}
+        </div>
+    );
+};
+
+export default MyAnimals;
