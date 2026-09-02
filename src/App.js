@@ -1,22 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { useAuth } from './hooks/useAuth';
+import { registerNativePush, initNativePushListeners } from './utils/nativePush';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import MyAnimals from './pages/MyAnimals';
 import Collections from './pages/Collections';
 import AnimalDetail from './pages/AnimalDetail';
 import Enclosures from './pages/Enclosures';
 import Breeding from './pages/Breeding';
 import PublicSearch from './pages/PublicSearch';
+import Profile from './pages/Profile';
+import Notifications from './pages/Notifications';
 import BottomNav from './components/BottomNav';
 import BrandHeader from './components/BrandHeader';
 
 function App() {
-  const { authToken, userProfile, loading, login, logout } = useAuth();
+  const { authToken, userProfile, loading, login, logout, completeAuth, refreshProfile } = useAuth();
   const location = useLocation();
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -25,6 +30,16 @@ function App() {
     StatusBar.setBackgroundColor({ color: '#D27096' });
     StatusBar.setStyle({ style: Style.Light });
   }, []);
+
+  useEffect(() => {
+    if (!authToken) return;
+    let cleanup = () => {};
+    (async () => {
+      cleanup = await initNativePushListeners(authToken);
+      await registerNativePush();
+    })();
+    return () => cleanup();
+  }, [authToken]);
 
   if (loading) {
     return (
@@ -35,14 +50,17 @@ function App() {
   }
 
   if (!authToken) {
-    return <Login onLogin={login} />;
+    if (showRegister) {
+      return <Register onRegistered={completeAuth} onBack={() => setShowRegister(false)} />;
+    }
+    return <Login onLogin={login} onShowRegister={() => setShowRegister(true)} />;
   }
 
-  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search';
+  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && location.pathname !== '/profile' && location.pathname !== '/notifications';
 
   return (
     <div className="App">
-      {showNav && <BrandHeader userProfile={userProfile} onLogout={logout} />}
+      {showNav && <BrandHeader userProfile={userProfile} onLogout={logout} authToken={authToken} />}
       <Routes>
         <Route path="/" element={<Navigate to="/animals" replace />} />
         <Route path="/animals" element={<MyAnimals authToken={authToken} />} />
@@ -51,6 +69,8 @@ function App() {
         <Route path="/enclosures" element={<Enclosures authToken={authToken} />} />
         <Route path="/breeding" element={<Breeding authToken={authToken} userProfile={userProfile} />} />
         <Route path="/search" element={<PublicSearch authToken={authToken} />} />
+        <Route path="/profile" element={<Profile authToken={authToken} userProfile={userProfile} onProfileUpdated={refreshProfile} onLogout={logout} />} />
+        <Route path="/notifications" element={<Notifications authToken={authToken} />} />
         <Route path="*" element={<Navigate to="/animals" replace />} />
       </Routes>
       {showNav && <BottomNav />}

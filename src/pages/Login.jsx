@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Loader2, LogIn, Mail, Eye, EyeOff } from 'lucide-react';
+import { Loader2, LogIn, Mail, Eye, EyeOff, Heart } from 'lucide-react';
 import logo from '../assets/lite-logo.png';
+import { openExternalLink } from '../utils/externalLink';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, onShowRegister }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +26,15 @@ const Login = ({ onLogin }) => {
     return (
         <div className="min-h-screen bg-page-bg flex flex-col items-center justify-center px-6">
             <div className="w-full max-w-sm">
+                <button
+                    type="button"
+                    onClick={() => openExternalLink('https://ko-fi.com/crittertrack')}
+                    className="w-full mb-4 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-md transition flex items-center justify-center gap-2 text-sm"
+                >
+                    <Heart size={16} className="fill-current" />
+                    Support CritterTrack
+                </button>
+
                 <div className="text-center mb-8">
                     <img src={logo} alt="CritterTrack Lite" className="w-28 h-28 mx-auto mb-3 object-contain" />
                     <h1 className="text-2xl font-bold text-gray-800">CritterTrack Lite</h1>
@@ -74,7 +84,10 @@ const Login = ({ onLogin }) => {
                         {loading ? 'Signing in…' : 'Sign In'}
                     </button>
                 </form>
-                <p className="text-center text-xs text-gray-400 mt-4">Uses the same account as the full CritterTrack app</p>
+                <button onClick={onShowRegister} className="w-full text-center text-sm text-accent font-semibold mt-4">
+                    Create Account
+                </button>
+                <p className="text-center text-xs text-gray-400 mt-3">Uses the same account as the full CritterTrack app</p>
             </div>
         </div>
     );

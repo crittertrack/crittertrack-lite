@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "215964783880",
+    "project_id": "crittertrack-android",
+    "storage_bucket": "crittertrack-android.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215964783880:android:db4af5ffd004fad258c8bd",
+        "android_client_info": {
+          "package_name": "com.crittertrack.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA82NIcYobMyg2t8Wok0s3B2NzkTPXFp4o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215964783880:android:cd03138af7d6e20158c8bd",
+        "android_client_info": {
+          "package_name": "com.crittertrack.lite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA82NIcYobMyg2t8Wok0s3B2NzkTPXFp4o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -31,12 +31,20 @@ export function useAuth() {
 
     useEffect(() => { fetchUserProfile(authToken); }, [authToken, fetchUserProfile]);
 
+    const refreshProfile = useCallback(() => fetchUserProfile(authToken), [authToken, fetchUserProfile]);
+
+    // Shared by login and registration (once a verification code completes the account) —
+    // both just need to persist the resulting token and let fetchUserProfile pick it up.
+    const completeAuth = useCallback((token) => {
+        localStorage.setItem('authToken', token);
+        setAuthToken(token);
+    }, []);
+
     const login = useCallback(async (email, password) => {
         const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password, keepSignedIn: true });
-        localStorage.setItem('authToken', response.data.token);
-        setAuthToken(response.data.token);
+        completeAuth(response.data.token);
         return response.data;
-    }, []);
+    }, [completeAuth]);
 
     const logout = useCallback(() => {
         localStorage.removeItem('authToken');
@@ -44,5 +52,5 @@ export function useAuth() {
         setUserProfile(null);
     }, []);
 
-    return { authToken, userProfile, loading, login, logout };
+    return { authToken, userProfile, loading, login, logout, completeAuth, refreshProfile };
 }

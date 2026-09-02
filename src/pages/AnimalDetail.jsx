@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, Pencil, Check, X, Mars, Venus, ScrollText, Heart, HeartOff, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Pencil, Check, X, Mars, Venus, ScrollText, Heart, HeartOff, Eye, EyeOff, Plus, Download, ChevronDown } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
 import PedigreeChart from '../components/PedigreeChart';
 import AssignCollectionsModal from '../components/AssignCollectionsModal';
+import ParentPickerModal from '../components/ParentPickerModal';
+import ProfilePickerModal from '../components/ProfilePickerModal';
 import { API_BASE_URL } from '../utils/apiConfig';
 import { formatDate, calculateAgeDetailed } from '../utils/dateFormatter';
 import { getVariety } from '../utils/variety';
@@ -18,6 +20,12 @@ const TABS = ['Summary', 'Records', 'Photos', 'Pedigree'];
 const STATUS_OPTIONS = ['Pet', 'Growout', 'Breeder', 'Available', 'Booked', 'Retired', 'Deceased', 'Rehomed', 'Unknown'];
 const GENDER_OPTIONS = ['Male', 'Female', 'Intersex', 'Mixed', 'Unknown'];
 const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'Negotiable'];
+const HEALTH_STATUS_BADGE = {
+    Healthy: 'bg-green-100 text-green-700',
+    Monitoring: 'bg-yellow-100 text-yellow-700',
+    Concern: 'bg-orange-100 text-orange-700',
+    Critical: 'bg-red-100 text-red-700',
+};
 const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$', AUD: 'A$' };
 const formatMoney = (amount, currency) => (currency === 'Negotiable' || !amount) ? (currency === 'Negotiable' ? 'Negotiable' : null) : `${CURRENCY_SYMBOLS[currency] || ''}${amount}`;
 // Same stage badge styling as Breeding.jsx's LitterCard, for litter-tracked offspring groups.
@@ -37,6 +45,14 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     const [tab, setTab] = useState('Summary');
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({});
+    const [openSections, setOpenSections] = useState({ main: true, appearance: false, ownership: false });
+    const toggleSection = (key) => setOpenSections((s) => ({ ...s, [key]: !s[key] }));
+    const [openRecordSections, setOpenRecordSections] = useState({ breedingCare: true, healthcare: false, legalOther: false });
+    const toggleRecordSection = (key) => setOpenRecordSections((s) => ({ ...s, [key]: !s[key] }));
+    // Session-only — isPlannedMating/isInMating/isPregnant/isNursing are normally auto-synced
+    // from Litter records (see reproStatusSync.js), so they must not be resent on unrelated
+    // saves unless the user explicitly opts into overriding them for this save.
+    const [reproOverride, setReproOverride] = useState(false);
     const [saving, setSaving] = useState(false);
     const [parents, setParents] = useState({ sire: null, dam: null });
     const [offspringGroups, setOffspringGroups] = useState([]); // pedigree-only (not tracked by a Litter record)
@@ -80,6 +96,44 @@ const AnimalDetail = ({ authToken, userProfile }) => {
             .then(([sire, dam]) => setParents({ sire, dam }));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [animal?.sireId_public, animal?.damId_public, authToken]);
+
+    // Resolve linked Breeder/Owner CTUIDs to a display name for the Ownership section.
+    const [breederInfo, setBreederInfo] = useState(null);
+    const [ownerInfo, setOwnerInfo] = useState(null);
+    const [pickerTarget, setPickerTarget] = useState(null); // 'breeder' | 'owner' | null
+    useEffect(() => {
+        const resolve = async (ctuid) => {
+            if (!ctuid) return null;
+            try {
+                const res = await axios.get(`${API_BASE_URL}/public/profiles/search`, { params: { query: ctuid, limit: 1 } });
+                return Array.isArray(res.data) ? res.data[0] || null : null;
+            } catch { return null; }
+        };
+        resolve(animal?.breederId_public).then(setBreederInfo);
+        resolve(animal?.ownerId_public).then(setOwnerInfo);
+    }, [animal?.breederId_public, animal?.ownerId_public]);
+
+    const handleSelectProfile = (profile) => {
+        const name = profile.breederName || profile.personalName || '';
+        if (pickerTarget === 'breeder') {
+            setForm((f) => ({ ...f, breederId_public: profile.id_public, manualBreederName: name }));
+            setBreederInfo(profile);
+        } else if (pickerTarget === 'owner') {
+            setForm((f) => ({ ...f, ownerId_public: profile.id_public, manualownerName: name }));
+            setOwnerInfo(profile);
+        }
+        setPickerTarget(null);
+    };
+
+    const clearProfileLink = (target) => {
+        if (target === 'breeder') {
+            setForm((f) => ({ ...f, breederId_public: null, manualBreederName: '' }));
+            setBreederInfo(null);
+        } else {
+            setForm((f) => ({ ...f, ownerId_public: null, manualownerName: '' }));
+            setOwnerInfo(null);
+        }
+    };
 
     useEffect(() => {
         if (!animal || tab !== 'Pedigree') return;
@@ -125,10 +179,21 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const response = await axios.put(`${API_BASE_URL}/animals/${id}`, form, authHeaders(authToken));
+            const payload = { ...form };
+            // Never resend these unless the user explicitly enabled the override this session —
+            // they're normally auto-synced from Litter records and this form's load-time snapshot
+            // can go stale (see reproStatusSync.js), silently clobbering the litter-synced truth.
+            if (!reproOverride) {
+                delete payload.isPlannedMating;
+                delete payload.isInMating;
+                delete payload.isPregnant;
+                delete payload.isNursing;
+            }
+            const response = await axios.put(`${API_BASE_URL}/animals/${id}`, payload, authHeaders(authToken));
             setAnimal(response.data);
             setForm(response.data);
             setEditing(false);
+            setReproOverride(false);
         } catch (error) {
             console.error('Failed to save animal:', error);
         } finally {
@@ -155,6 +220,92 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         } catch (error) {
             console.error('Failed to update public status:', error);
             setAnimal((a) => ({ ...a, isDisplay: !newValue })); // revert on failure
+        }
+    };
+
+    // 'sire' | 'dam' | null — which parent slot the picker modal is currently assigning.
+    const [pickerRole, setPickerRole] = useState(null);
+    const handleAssignParent = async (role, selectedAnimal) => {
+        const key = role === 'sire' ? 'sireId_public' : 'damId_public';
+        try {
+            const response = await axios.put(`${API_BASE_URL}/animals/${id}`, { [key]: selectedAnimal ? selectedAnimal.id_public : null }, authHeaders(authToken));
+            setAnimal(response.data);
+            setForm(response.data);
+            setParents((p) => ({ ...p, [role]: selectedAnimal || null }));
+        } catch (error) {
+            console.error(`Failed to update ${role}:`, error);
+        } finally {
+            setPickerRole(null);
+        }
+    };
+
+    // Primary photo (imageUrl/photoUrl) and gallery (extraImages) are modeled as one combined
+    // list here, with index 0 always the primary — mirrors crittertrack-frontend's gallery form.
+    const photosFileInputRef = useRef(null);
+    const [uploadingPhotos, setUploadingPhotos] = useState(false);
+    const [photoError, setPhotoError] = useState('');
+    const photos = animal ? [animal.imageUrl || animal.photoUrl, ...(Array.isArray(animal.extraImages) ? animal.extraImages : [])].filter(Boolean) : [];
+
+    const persistPhotos = async (newPhotos) => {
+        const [primary, ...rest] = newPhotos;
+        const payload = { imageUrl: primary || null, photoUrl: primary || null, extraImages: rest };
+        const response = await axios.put(`${API_BASE_URL}/animals/${id}`, payload, authHeaders(authToken));
+        setAnimal(response.data);
+        setForm(response.data);
+    };
+
+    const handleAddPhotos = async (e) => {
+        const files = Array.from(e.target.files || []);
+        e.target.value = '';
+        if (!files.length) return;
+        setPhotoError('');
+        setUploadingPhotos(true);
+        try {
+            const uploaded = await Promise.all(files.map(async (file) => {
+                const fd = new FormData();
+                fd.append('file', file);
+                fd.append('type', 'animal');
+                const res = await axios.post(`${API_BASE_URL}/upload`, fd, authHeaders(authToken));
+                return res.data?.url;
+            }));
+            await persistPhotos([...photos, ...uploaded.filter(Boolean)]);
+        } catch (error) {
+            console.error('Failed to upload photo:', error);
+            setPhotoError('Failed to upload photo.');
+        } finally {
+            setUploadingPhotos(false);
+        }
+    };
+
+    const handleRemovePhoto = async (index) => {
+        setPhotoError('');
+        try {
+            await persistPhotos(photos.filter((_, i) => i !== index));
+        } catch (error) {
+            console.error('Failed to remove photo:', error);
+            setPhotoError('Failed to remove photo.');
+        }
+    };
+
+    // Data URIs (unlike blob: URIs) actually trigger Android WebView's download manager via a
+    // plain <a download> click, same trick PedigreeChart.jsx's image/PDF export already relies on.
+    const [enlargedImage, setEnlargedImage] = useState(null);
+    const handleDownloadImage = async (url) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            const link = document.createElement('a');
+            link.download = `crittertrack-image-${Date.now()}.jpg`;
+            link.href = dataUrl;
+            link.click();
+        } catch (error) {
+            console.error('Failed to download image:', error);
         }
     };
 
@@ -189,6 +340,16 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         ['Ring', animal.ringId],
         ['Eartag', animal.eartagNumber],
     ].filter(([, value]) => value);
+    const hasRecordsData = Boolean(
+        animal.lastFedDate || animal.feedingIntervalHours || (animal.animalCareTasks || []).length ||
+        animal.isPregnant || animal.isNursing || animal.isInMating ||
+        (animal.vetVisits || []).length || (animal.medications || []).length || (animal.vaccinations || []).length ||
+        (animal.dewormingRecords || []).length || (animal.medicalConditions || []).length || (animal.allergies || []).length ||
+        animal.healthStatusOverride || (animal.quarantineDetails?.status && animal.quarantineDetails.status !== 'None') ||
+        animal.purchaseDate || animal.purchasePrice || animal.purchaseLocation || animal.sellerName ||
+        animal.saleDate || animal.salePrice || animal.buyerName ||
+        (animal.shows || []).length || (animal.milestones || []).length || (animal.breedingRecords || []).length
+    );
 
     return (
         <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
@@ -196,11 +357,11 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                 title={displayName}
                 onBack={() => navigate(-1)}
                 right={
-                    tab === 'Summary' && canEdit && (
+                    (tab === 'Summary' || tab === 'Records' || tab === 'Photos' || tab === 'Pedigree') && canEdit && (
                         editing ? (
                             <div className="flex gap-1">
-                                <button onClick={handleSave} disabled={saving} className="p-1.5 rounded-full bg-white/20"><Check size={16} /></button>
-                                <button onClick={() => { setEditing(false); setForm(animal); }} className="p-1.5 rounded-full bg-white/20"><X size={16} /></button>
+                                <button onClick={() => (tab === 'Photos' || tab === 'Pedigree' ? setEditing(false) : handleSave())} disabled={saving} className="p-1.5 rounded-full bg-white/20"><Check size={16} /></button>
+                                <button onClick={() => { setEditing(false); setForm(animal); setReproOverride(false); }} className="p-1.5 rounded-full bg-white/20"><X size={16} /></button>
                             </div>
                         ) : (
                             <button onClick={() => setEditing(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/20 text-sm font-semibold">
@@ -212,9 +373,13 @@ const AnimalDetail = ({ authToken, userProfile }) => {
             />
 
             <div className="mx-4 mt-4">
-                <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-md bg-white">
+                <button
+                    type="button"
+                    onClick={() => (animal.imageUrl || animal.photoUrl) && setEnlargedImage(animal.imageUrl || animal.photoUrl)}
+                    className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-md bg-white block"
+                >
                     <AnimalImage src={animal.imageUrl || animal.photoUrl} alt={displayName} iconSize={40} />
-                </div>
+                </button>
             </div>
 
             <div className="mx-4 mt-3 mb-3 bg-white rounded-2xl shadow-sm p-4">
@@ -286,37 +451,38 @@ const AnimalDetail = ({ authToken, userProfile }) => {
             <div className="px-4 space-y-3">
                 {tab === 'Summary' && (
                     editing ? (
-                        <div className="bg-white rounded-xl p-4 space-y-3 shadow-sm">
-                            <Field label="Name"><input value={form.name || ''} onChange={set('name')} className="input" /></Field>
-                            <Field label="Prefix"><input value={form.prefix || ''} onChange={set('prefix')} className="input" /></Field>
-                            <Field label="Suffix"><input value={form.suffix || ''} onChange={set('suffix')} className="input" /></Field>
-                            <Field label="Gender">
-                                <select value={form.gender || ''} onChange={set('gender')} className="input">
-                                    {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
-                                </select>
-                            </Field>
-                            <Field label="Status">
-                                <select value={form.status || ''} onChange={set('status')} className="input">
-                                    {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                            </Field>
-                            <Field label="Birth Date">
-                                <input type="date" value={form.birthDate ? form.birthDate.slice(0, 10) : ''} onChange={set('birthDate')} className="input" />
-                            </Field>
-                            <div className="border-t border-gray-100 pt-3">
-                                <p className="text-xs font-bold text-gray-400 uppercase mb-2">Appearance</p>
-                                <div className="space-y-3">
-                                    {getAppearanceFields(getSpeciesCategory(speciesList, animal.species), animal.species).map(({ key, label }) => (
-                                        <Field key={key} label={label}>
-                                            <input value={form[key] || ''} onChange={set(key)} className="input" />
-                                        </Field>
-                                    ))}
-                                </div>
-                            </div>
-                            <Field label="Remarks">
-                                <textarea value={form.remarks || ''} onChange={set('remarks')} className="input" rows={3} />
-                            </Field>
-                            <div className="border-t border-gray-100 pt-3 space-y-2">
+                        <div className="space-y-3">
+                            <CollapsibleSection title="Main" open={openSections.main} onToggle={() => toggleSection('main')}>
+                                <Field label="Name"><input value={form.name || ''} onChange={set('name')} className="input" /></Field>
+                                <Field label="Prefix"><input value={form.prefix || ''} onChange={set('prefix')} className="input" /></Field>
+                                <Field label="Suffix"><input value={form.suffix || ''} onChange={set('suffix')} className="input" /></Field>
+                                <Field label="Gender">
+                                    <select value={form.gender || ''} onChange={set('gender')} className="input">
+                                        {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
+                                    </select>
+                                </Field>
+                                <Field label="Status">
+                                    <select value={form.status || ''} onChange={set('status')} className="input">
+                                        {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </Field>
+                                <Field label="Birth Date">
+                                    <input type="date" value={form.birthDate ? form.birthDate.slice(0, 10) : ''} onChange={set('birthDate')} className="input" />
+                                </Field>
+                                <Field label="Remarks">
+                                    <textarea value={form.remarks || ''} onChange={set('remarks')} className="input" rows={3} />
+                                </Field>
+                            </CollapsibleSection>
+
+                            <CollapsibleSection title="Appearance" open={openSections.appearance} onToggle={() => toggleSection('appearance')}>
+                                {getAppearanceFields(getSpeciesCategory(speciesList, animal.species), animal.species).map(({ key, label }) => (
+                                    <Field key={key} label={label}>
+                                        <input value={form[key] || ''} onChange={set(key)} className="input" />
+                                    </Field>
+                                ))}
+                            </CollapsibleSection>
+
+                            <CollapsibleSection title="Ownership" open={openSections.ownership} onToggle={() => toggleSection('ownership')}>
                                 <label className="flex items-center gap-2">
                                     <input type="checkbox" checked={!!form.isForSale} onChange={setChecked('isForSale')} className="w-4 h-4 accent-accent" />
                                     <span className="text-xs font-semibold text-gray-500">Available for Sale</span>
@@ -341,7 +507,44 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         <input type="number" placeholder="Fee" value={form.studFeeAmount ?? ''} onChange={set('studFeeAmount')} disabled={form.studFeeCurrency === 'Negotiable'} className="input flex-1" />
                                     </div>
                                 )}
-                            </div>
+                                <div className="border-t border-gray-100 pt-3 space-y-3">
+                                    <Field label="Breeder">
+                                        <div className="flex gap-2">
+                                            <input
+                                                value={form.manualBreederName || ''}
+                                                onChange={set('manualBreederName')}
+                                                disabled={!!form.breederId_public}
+                                                placeholder="Type a name..."
+                                                className="input flex-1 disabled:bg-gray-100 disabled:text-gray-500"
+                                            />
+                                            {form.breederId_public ? (
+                                                <button type="button" onClick={() => clearProfileLink('breeder')} className="px-2.5 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                                            ) : (
+                                                <button type="button" onClick={() => setPickerTarget('breeder')} className="px-2.5 rounded-lg bg-gray-100 text-accent text-xs font-semibold whitespace-nowrap">Link CTUID</button>
+                                            )}
+                                        </div>
+                                        {form.breederId_public && <p className="text-[11px] text-gray-400 mt-1">Linked: {breederInfo?.breederName || breederInfo?.personalName || form.breederId_public}</p>}
+                                    </Field>
+                                    <Field label="Owner">
+                                        <div className="flex gap-2">
+                                            <input
+                                                value={form.manualownerName || ''}
+                                                onChange={set('manualownerName')}
+                                                disabled={!!form.ownerId_public}
+                                                placeholder="Type a name..."
+                                                className="input flex-1 disabled:bg-gray-100 disabled:text-gray-500"
+                                            />
+                                            {form.ownerId_public ? (
+                                                <button type="button" onClick={() => clearProfileLink('owner')} className="px-2.5 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                                            ) : (
+                                                <button type="button" onClick={() => setPickerTarget('owner')} className="px-2.5 rounded-lg bg-gray-100 text-accent text-xs font-semibold whitespace-nowrap">Link CTUID</button>
+                                            )}
+                                        </div>
+                                        {form.ownerId_public && <p className="text-[11px] text-gray-400 mt-1">Linked: {ownerInfo?.breederName || ownerInfo?.personalName || form.ownerId_public}</p>}
+                                    </Field>
+                                    <Field label="Co-Owner"><input value={form.coOwnership || ''} onChange={set('coOwnership')} className="input" /></Field>
+                                </div>
+                            </CollapsibleSection>
                         </div>
                     ) : (
                         <div className="bg-white rounded-xl p-4 space-y-2 shadow-sm text-sm">
@@ -375,36 +578,427 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     value={`${(inbreeding.inbreedingCoefficient ?? 0).toFixed(2)}% / ${inbreeding.avgKinship != null ? inbreeding.avgKinship.toFixed(2) + '%' : '—'}`}
                                 />
                             )}
+                            {(animal.manualBreederName || animal.breederId_public) && (
+                                <Row label="Breeder" value={animal.manualBreederName || breederInfo?.breederName || breederInfo?.personalName || animal.breederId_public} />
+                            )}
+                            {(animal.manualownerName || animal.ownerId_public) && (
+                                <Row label="Owner" value={animal.manualownerName || ownerInfo?.breederName || ownerInfo?.personalName || animal.ownerId_public} />
+                            )}
+                            {animal.coOwnership && <Row label="Co-Owner" value={animal.coOwnership} />}
                             {animal.remarks && <Row label="Remarks" value={animal.remarks} />}
                         </div>
                     )
                 )}
 
                 {tab === 'Records' && (
-                    <div className="bg-white rounded-xl p-4 space-y-2 shadow-sm text-sm">
-                        <Row label="Last Updated" value={formatDate(animal.updatedAt)} />
-                        {animal.enclosureId && <Row label="Enclosure" value={enclosureName || animal.enclosureId} />}
-                        {Array.isArray(animal.breedingRecords) && animal.breedingRecords.length > 0 ? (
-                            <div className="pt-2">
-                                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Breeding Records</p>
-                                {animal.breedingRecords.map((r, i) => (
-                                    <p key={i} className="text-xs text-gray-600">{formatDate(r.date)} — {r.type || r.notes || 'Record'}</p>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-xs text-gray-400 pt-2">No scheduled or medical records yet.</p>
-                        )}
-                    </div>
+                    editing ? (
+                        <div className="space-y-3">
+                            <CollapsibleSection title="Breeding & Care" open={openRecordSections.breedingCare} onToggle={() => toggleRecordSection('breedingCare')}>
+                                <Field label="Last Fed Date">
+                                    <input type="date" value={form.lastFedDate ? form.lastFedDate.slice(0, 10) : ''} onChange={set('lastFedDate')} className="input" />
+                                </Field>
+                                <Field label="Feeding Interval (hours)">
+                                    <input type="number" value={form.feedingIntervalHours ?? ''} onChange={set('feedingIntervalHours')} className="input" />
+                                </Field>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Care Tasks"
+                                        records={form.animalCareTasks}
+                                        onChange={(next) => setForm((f) => ({ ...f, animalCareTasks: next }))}
+                                        defaults={{ taskName: '', lastDoneDate: null, frequencyDays: null, notes: '' }}
+                                        fields={[
+                                            { key: 'taskName', label: 'Task Name' },
+                                            { key: 'lastDoneDate', label: 'Last Done', type: 'date' },
+                                            { key: 'frequencyDays', label: 'Frequency (days)', type: 'number' },
+                                            { key: 'notes', label: 'Notes' },
+                                        ]}
+                                    />
+                                </div>
+                                <div className="border-t border-gray-100 pt-3 space-y-2">
+                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Reproduction State</p>
+                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 space-y-1">
+                                        <p className="text-[11px] font-semibold text-gray-500">Auto-calculated from Litters:</p>
+                                        <p className="text-xs text-gray-600">📋 Planned Mating: {animal.isPlannedMating ? '✓' : '✗'}</p>
+                                        <p className="text-xs text-gray-600">⚡ In Mating: {animal.isInMating ? '✓' : '✗'}</p>
+                                        <p className="text-xs text-gray-600">🤰 Pregnant: {animal.isPregnant ? '✓' : '✗'}</p>
+                                        <p className="text-xs text-gray-600">🍼 Nursing: {animal.isNursing ? '✓' : '✗'}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (reproOverride) {
+                                                setReproOverride(false);
+                                                setForm((f) => ({ ...f, isPlannedMating: animal.isPlannedMating, isInMating: animal.isInMating, isPregnant: animal.isPregnant, isNursing: animal.isNursing }));
+                                            } else {
+                                                setReproOverride(true);
+                                            }
+                                        }}
+                                        className={`w-full px-3 py-1.5 text-xs font-semibold rounded-lg ${reproOverride ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-accent'}`}
+                                    >
+                                        {reproOverride ? 'Clear Override' : 'Enable Manual Override'}
+                                    </button>
+                                    {reproOverride && (
+                                        <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-2.5 space-y-1.5">
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" checked={!!form.isPlannedMating} onChange={setChecked('isPlannedMating')} className="w-4 h-4 accent-accent" />
+                                                <span className="text-xs font-semibold text-gray-500">Planned Mating</span>
+                                            </label>
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" checked={!!form.isInMating} onChange={setChecked('isInMating')} className="w-4 h-4 accent-accent" />
+                                                <span className="text-xs font-semibold text-gray-500">In Mating</span>
+                                            </label>
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" checked={!!form.isPregnant} onChange={setChecked('isPregnant')} className="w-4 h-4 accent-accent" />
+                                                <span className="text-xs font-semibold text-gray-500">Pregnant</span>
+                                            </label>
+                                            <label className="flex items-center gap-2">
+                                                <input type="checkbox" checked={!!form.isNursing} onChange={setChecked('isNursing')} className="w-4 h-4 accent-accent" />
+                                                <span className="text-xs font-semibold text-gray-500">Nursing</span>
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            </CollapsibleSection>
+
+                            <CollapsibleSection title="Healthcare" open={openRecordSections.healthcare} onToggle={() => toggleRecordSection('healthcare')}>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-gray-500">Health Status</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${HEALTH_STATUS_BADGE[form.healthStatusOverride || animal.healthStatus] || 'bg-gray-100 text-gray-500'}`}>
+                                        {form.healthStatusOverride || animal.healthStatus || 'Healthy'}
+                                    </span>
+                                </div>
+                                <Field label="Override Health Status">
+                                    <select value={form.healthStatusOverride || ''} onChange={(e) => setForm((f) => ({ ...f, healthStatusOverride: e.target.value || null }))} className="input">
+                                        <option value="">None (auto-calculated)</option>
+                                        <option value="Healthy">Healthy</option>
+                                        <option value="Monitoring">Monitoring</option>
+                                        <option value="Concern">Concern</option>
+                                        <option value="Critical">Critical</option>
+                                    </select>
+                                </Field>
+                                {form.healthStatusOverride && (
+                                    <Field label="Override Reason">
+                                        <input value={form.healthStatusOverrideNotes || ''} onChange={set('healthStatusOverrideNotes')} className="input" />
+                                    </Field>
+                                )}
+
+                                <div className="border-t border-gray-100 pt-3 space-y-3">
+                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Quarantine / Isolation</p>
+                                    <Field label="Status">
+                                        <select
+                                            value={form.quarantineDetails?.status || 'None'}
+                                            onChange={(e) => setForm((f) => ({ ...f, quarantineDetails: { ...f.quarantineDetails, status: e.target.value } }))}
+                                            className="input"
+                                        >
+                                            <option value="None">None</option>
+                                            <option value="Quarantine">Quarantine</option>
+                                            <option value="Isolation">Isolation</option>
+                                        </select>
+                                    </Field>
+                                    {(form.quarantineDetails?.status === 'Quarantine' || form.quarantineDetails?.status === 'Isolation') && (
+                                        <>
+                                            <Field label="Type/Reason">
+                                                <select
+                                                    value={form.quarantineDetails?.type || ''}
+                                                    onChange={(e) => setForm((f) => ({ ...f, quarantineDetails: { ...f.quarantineDetails, type: e.target.value } }))}
+                                                    className="input"
+                                                >
+                                                    <option value="">Select type...</option>
+                                                    <option value="Preventive - New Arrival">Preventive - New Arrival</option>
+                                                    <option value="Preventive - Intake">Preventive - Intake</option>
+                                                    <option value="Medical - Illness/URI">Medical - Illness/URI</option>
+                                                    <option value="Medical - Contagious Disease">Medical - Contagious Disease</option>
+                                                    <option value="Medical - Recovery">Medical - Recovery</option>
+                                                    <option value="Behavioral - Aggression">Behavioral - Aggression</option>
+                                                    <option value="Behavioral - Fear/Stress">Behavioral - Fear/Stress</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            </Field>
+                                            <Field label="Additional Notes">
+                                                <input
+                                                    value={form.quarantineDetails?.reason || ''}
+                                                    onChange={(e) => setForm((f) => ({ ...f, quarantineDetails: { ...f.quarantineDetails, reason: e.target.value } }))}
+                                                    className="input"
+                                                />
+                                            </Field>
+                                            <Field label="Start Date">
+                                                <input
+                                                    type="date"
+                                                    value={form.quarantineDetails?.startDate ? form.quarantineDetails.startDate.slice(0, 10) : ''}
+                                                    onChange={(e) => setForm((f) => ({ ...f, quarantineDetails: { ...f.quarantineDetails, startDate: e.target.value || null } }))}
+                                                    className="input"
+                                                />
+                                            </Field>
+                                            <Field label="End Date">
+                                                <input
+                                                    type="date"
+                                                    value={form.quarantineDetails?.endDate ? form.quarantineDetails.endDate.slice(0, 10) : ''}
+                                                    onChange={(e) => setForm((f) => ({ ...f, quarantineDetails: { ...f.quarantineDetails, endDate: e.target.value || null } }))}
+                                                    className="input"
+                                                />
+                                            </Field>
+                                        </>
+                                    )}
+                                </div>
+
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Vet Visits"
+                                        records={form.vetVisits}
+                                        onChange={(next) => setForm((f) => ({ ...f, vetVisits: next }))}
+                                        defaults={{ date: null, reason: '', notes: '' }}
+                                        fields={[
+                                            { key: 'date', label: 'Date', type: 'date' },
+                                            { key: 'reason', label: 'Reason' },
+                                            { key: 'notes', label: 'Notes' },
+                                        ]}
+                                    />
+                                </div>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Medications"
+                                        records={form.medications}
+                                        onChange={(next) => setForm((f) => ({ ...f, medications: next }))}
+                                        defaults={{ name: '', dose: '', reason: '', startDate: null, stopDate: null, intervalValue: null, intervalUnit: 'hours', notes: '' }}
+                                        fields={[
+                                            { key: 'name', label: 'Name' },
+                                            { key: 'dose', label: 'Dose' },
+                                            { key: 'reason', label: 'Reason' },
+                                            { key: 'startDate', label: 'Start Date', type: 'date' },
+                                            { key: 'stopDate', label: 'Stop Date', type: 'date' },
+                                            { key: 'intervalValue', label: 'Interval', type: 'number' },
+                                            { key: 'intervalUnit', label: 'Interval Unit', type: 'select', options: ['hours', 'days', 'weeks'] },
+                                            { key: 'notes', label: 'Notes' },
+                                        ]}
+                                    />
+                                </div>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Vaccinations"
+                                        records={form.vaccinations}
+                                        onChange={(next) => setForm((f) => ({ ...f, vaccinations: next }))}
+                                        defaults={{ date: null, name: '', notes: '' }}
+                                        fields={[
+                                            { key: 'date', label: 'Date', type: 'date' },
+                                            { key: 'name', label: 'Name' },
+                                            { key: 'notes', label: 'Notes' },
+                                        ]}
+                                    />
+                                </div>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Deworming"
+                                        records={form.dewormingRecords}
+                                        onChange={(next) => setForm((f) => ({ ...f, dewormingRecords: next }))}
+                                        defaults={{ date: null, medication: '', notes: '' }}
+                                        fields={[
+                                            { key: 'date', label: 'Date', type: 'date' },
+                                            { key: 'medication', label: 'Medication' },
+                                            { key: 'notes', label: 'Notes' },
+                                        ]}
+                                    />
+                                </div>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Medical Conditions"
+                                        records={form.medicalConditions}
+                                        onChange={(next) => setForm((f) => ({ ...f, medicalConditions: next }))}
+                                        defaults={{ name: '', notes: '' }}
+                                        fields={[
+                                            { key: 'name', label: 'Condition' },
+                                            { key: 'notes', label: 'Notes' },
+                                        ]}
+                                    />
+                                </div>
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Allergies"
+                                        records={form.allergies}
+                                        onChange={(next) => setForm((f) => ({ ...f, allergies: next }))}
+                                        defaults={{ name: '', notes: '' }}
+                                        fields={[
+                                            { key: 'name', label: 'Allergy' },
+                                            { key: 'notes', label: 'Notes' },
+                                        ]}
+                                    />
+                                </div>
+                            </CollapsibleSection>
+
+                            <CollapsibleSection title="Legal & Other" open={openRecordSections.legalOther} onToggle={() => toggleRecordSection('legalOther')}>
+                                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Purchase</p>
+                                <Field label="Purchase Date">
+                                    <input type="date" value={form.purchaseDate ? form.purchaseDate.slice(0, 10) : ''} onChange={set('purchaseDate')} className="input" />
+                                </Field>
+                                <Field label="Purchase Price">
+                                    <div className="flex gap-2">
+                                        <select value={form.purchasePriceCurrency || 'USD'} onChange={set('purchasePriceCurrency')} className="input w-24">
+                                            {CURRENCY_OPTIONS.filter((c) => c !== 'Negotiable').map((c) => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                        <input type="number" value={form.purchasePrice ?? ''} onChange={set('purchasePrice')} className="input flex-1" />
+                                    </div>
+                                </Field>
+                                <Field label="Purchase Location">
+                                    <input value={form.purchaseLocation || ''} onChange={set('purchaseLocation')} className="input" />
+                                </Field>
+                                <Field label="Seller Name">
+                                    <input value={form.sellerName || ''} onChange={set('sellerName')} className="input" />
+                                </Field>
+
+                                <div className="border-t border-gray-100 pt-3 space-y-3">
+                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Sale</p>
+                                    <Field label="Sale Date">
+                                        <input type="date" value={form.saleDate ? form.saleDate.slice(0, 10) : ''} onChange={set('saleDate')} className="input" />
+                                    </Field>
+                                    <Field label="Sale Price">
+                                        <div className="flex gap-2">
+                                            <select value={form.saleRecordCurrency || 'USD'} onChange={set('saleRecordCurrency')} className="input w-24">
+                                                {CURRENCY_OPTIONS.filter((c) => c !== 'Negotiable').map((c) => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                            <input type="number" value={form.salePrice ?? ''} onChange={set('salePrice')} className="input flex-1" />
+                                        </div>
+                                    </Field>
+                                    <Field label="Buyer Name">
+                                        <input value={form.buyerName || ''} onChange={set('buyerName')} className="input" />
+                                    </Field>
+                                </div>
+
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Shows"
+                                        records={form.shows}
+                                        onChange={(next) => setForm((f) => ({ ...f, shows: next }))}
+                                        defaults={{ date: null, showName: '', titleEarned: '', judgeName: '', score: '', judgeComments: '' }}
+                                        fields={[
+                                            { key: 'date', label: 'Date', type: 'date' },
+                                            { key: 'showName', label: 'Show Name' },
+                                            { key: 'titleEarned', label: 'Title Earned' },
+                                            { key: 'judgeName', label: 'Judge' },
+                                            { key: 'score', label: 'Score' },
+                                            { key: 'judgeComments', label: 'Judge Comments' },
+                                        ]}
+                                    />
+                                </div>
+
+                                <div className="border-t border-gray-100 pt-3">
+                                    <RecordListEditor
+                                        label="Milestones"
+                                        records={form.milestones}
+                                        onChange={(next) => setForm((f) => ({ ...f, milestones: next }))}
+                                        defaults={{ label: '', startDate: null, interval: null, intervalUnit: 'week' }}
+                                        fields={[
+                                            { key: 'label', label: 'Label' },
+                                            { key: 'startDate', label: 'Date', type: 'date' },
+                                            { key: 'interval', label: 'Repeat Every', type: 'number' },
+                                            { key: 'intervalUnit', label: 'Unit', type: 'select', options: ['day', 'week', 'month', 'year'] },
+                                        ]}
+                                    />
+                                </div>
+                            </CollapsibleSection>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl p-4 space-y-2 shadow-sm text-sm">
+                            <Row label="Last Updated" value={formatDate(animal.updatedAt)} />
+                            {animal.enclosureId && <Row label="Enclosure" value={enclosureName || animal.enclosureId} />}
+                            {animal.lastFedDate && <Row label="Last Fed" value={formatDate(animal.lastFedDate)} />}
+                            {animal.feedingIntervalHours != null && <Row label="Feeding Interval" value={`${animal.feedingIntervalHours} hrs`} />}
+                            {(animal.isPregnant || animal.isNursing || animal.isInMating) && (
+                                <Row label="Reproduction State" value={[animal.isPregnant && 'Pregnant', animal.isNursing && 'Nursing', animal.isInMating && 'In Mating'].filter(Boolean).join(', ')} />
+                            )}
+                            <RecordListView label="Care Tasks" records={animal.animalCareTasks} renderItem={(r) => `${r.taskName}${r.frequencyDays ? ` every ${r.frequencyDays}d` : ''}${r.lastDoneDate ? ` (last: ${formatDate(r.lastDoneDate)})` : ''}`} />
+                            <Row
+                                label="Health Status"
+                                value={
+                                    (animal.healthStatusOverride || animal.healthStatus) && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${HEALTH_STATUS_BADGE[animal.healthStatusOverride || animal.healthStatus] || 'bg-gray-100 text-gray-500'}`}>
+                                            {animal.healthStatusOverride || animal.healthStatus}
+                                        </span>
+                                    )
+                                }
+                            />
+                            {animal.quarantineDetails?.status && animal.quarantineDetails.status !== 'None' && (
+                                <Row
+                                    label="Quarantine"
+                                    value={`${animal.quarantineDetails.status}${animal.quarantineDetails.type ? ` — ${animal.quarantineDetails.type}` : ''}${animal.quarantineDetails.startDate ? ` (since ${formatDate(animal.quarantineDetails.startDate)})` : ''}`}
+                                />
+                            )}
+                            <RecordListView label="Vet Visits" records={animal.vetVisits} renderItem={(r) => `${formatDate(r.date)} — ${r.reason || 'Visit'}${r.notes ? `: ${r.notes}` : ''}`} />
+                            <RecordListView label="Medications" records={animal.medications} renderItem={(r) => `${r.name}${r.dose ? ` (${r.dose})` : ''}${r.reason ? ` — ${r.reason}` : ''}`} />
+                            <RecordListView label="Vaccinations" records={animal.vaccinations} renderItem={(r) => `${formatDate(r.date)} — ${r.name}`} />
+                            <RecordListView label="Deworming" records={animal.dewormingRecords} renderItem={(r) => `${formatDate(r.date)} — ${r.medication}`} />
+                            <RecordListView label="Medical Conditions" records={animal.medicalConditions} renderItem={(r) => `${r.name}${r.notes ? `: ${r.notes}` : ''}`} />
+                            <RecordListView label="Allergies" records={animal.allergies} renderItem={(r) => `${r.name}${r.notes ? `: ${r.notes}` : ''}`} />
+                            {(animal.purchaseDate || animal.purchasePrice != null || animal.purchaseLocation || animal.sellerName) && (
+                                <div className="pt-2">
+                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Purchase</p>
+                                    {animal.purchaseDate && <Row label="Date" value={formatDate(animal.purchaseDate)} />}
+                                    {animal.purchasePrice != null && <Row label="Price" value={`${animal.purchasePriceCurrency || 'USD'} ${animal.purchasePrice}`} />}
+                                    {animal.purchaseLocation && <Row label="Location" value={animal.purchaseLocation} />}
+                                    {animal.sellerName && <Row label="Seller" value={animal.sellerName} />}
+                                </div>
+                            )}
+                            {(animal.saleDate || animal.salePrice != null || animal.buyerName) && (
+                                <div className="pt-2">
+                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Sale</p>
+                                    {animal.saleDate && <Row label="Date" value={formatDate(animal.saleDate)} />}
+                                    {animal.salePrice != null && <Row label="Price" value={`${animal.saleRecordCurrency || 'USD'} ${animal.salePrice}`} />}
+                                    {animal.buyerName && <Row label="Buyer" value={animal.buyerName} />}
+                                </div>
+                            )}
+                            <RecordListView label="Shows" records={animal.shows} renderItem={(r) => `${formatDate(r.date)} — ${r.showName}${r.titleEarned ? ` (${r.titleEarned})` : ''}`} />
+                            <RecordListView label="Milestones" records={animal.milestones} renderItem={(r) => `${r.label} — ${formatDate(r.startDate)}${r.interval && r.intervalUnit ? ` (every ${r.interval} ${r.intervalUnit}${r.interval > 1 ? 's' : ''})` : ''}`} />
+                            {Array.isArray(animal.breedingRecords) && animal.breedingRecords.length > 0 && (
+                                <div className="pt-2">
+                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Breeding Records</p>
+                                    {animal.breedingRecords.map((r, i) => (
+                                        <p key={i} className="text-xs text-gray-600">{formatDate(r.date)} — {r.type || r.notes || 'Record'}</p>
+                                    ))}
+                                </div>
+                            )}
+                            {!hasRecordsData && <p className="text-xs text-gray-400 pt-2">No scheduled or medical records yet.</p>}
+                        </div>
+                    )
                 )}
 
                 {tab === 'Photos' && (
-                    <div className="bg-white rounded-xl p-4 shadow-sm">
-                        {animal.imageUrl || animal.photoUrl ? (
-                            <div className="w-full aspect-square rounded-lg overflow-hidden">
-                                <AnimalImage src={animal.imageUrl || animal.photoUrl} alt={displayName} iconSize={40} />
-                            </div>
-                        ) : (
+                    <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+                        {photoError && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{photoError}</div>}
+                        {photos.length === 0 ? (
                             <p className="text-center text-xs text-gray-400 py-8">No photos yet.</p>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-2">
+                                {photos.map((url, i) => (
+                                    <div key={url + i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                        <button type="button" onClick={() => setEnlargedImage(url)} className="w-full h-full block">
+                                            <AnimalImage src={url} alt={`${displayName} photo ${i + 1}`} iconSize={24} />
+                                        </button>
+                                        {i === 0 && (
+                                            <span className="absolute top-1 left-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-black/60 text-white">Main</span>
+                                        )}
+                                        {canEdit && editing && (
+                                            <button
+                                                onClick={() => handleRemovePhoto(i)}
+                                                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {canEdit && editing && (
+                            <>
+                                <input ref={photosFileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAddPhotos} />
+                                <button
+                                    type="button"
+                                    onClick={() => photosFileInputRef.current?.click()}
+                                    disabled={uploadingPhotos}
+                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-sm font-semibold text-accent disabled:opacity-60"
+                                >
+                                    {uploadingPhotos ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                                    {uploadingPhotos ? 'Uploading…' : 'Add Photo'}
+                                </button>
+                            </>
                         )}
                     </div>
                 )}
@@ -422,8 +1016,32 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                         <div className="bg-white rounded-xl p-4 shadow-sm">
                             <p className="text-xs font-bold text-gray-400 uppercase mb-2">Parents</p>
                             <div className="grid grid-cols-2 gap-2 text-sm">
-                                <ParentCard label="Sire" parent={parents.sire} onClick={() => parents.sire && navigate(`/animals/${parents.sire.id_public}`)} />
-                                <ParentCard label="Dam" parent={parents.dam} onClick={() => parents.dam && navigate(`/animals/${parents.dam.id_public}`)} />
+                                <div className="space-y-1">
+                                    <ParentCard label="Sire" parent={parents.sire} onClick={() => parents.sire && navigate(`/animals/${parents.sire.id_public}`)} />
+                                    {canEdit && editing && (
+                                        <div className="flex gap-2 px-1">
+                                            <button onClick={() => setPickerRole('sire')} className="text-[10px] font-semibold text-accent underline">
+                                                {parents.sire ? 'Change' : 'Assign'}
+                                            </button>
+                                            {parents.sire && (
+                                                <button onClick={() => handleAssignParent('sire', null)} className="text-[10px] font-semibold text-red-500 underline">Clear</button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <ParentCard label="Dam" parent={parents.dam} onClick={() => parents.dam && navigate(`/animals/${parents.dam.id_public}`)} />
+                                    {canEdit && editing && (
+                                        <div className="flex gap-2 px-1">
+                                            <button onClick={() => setPickerRole('dam')} className="text-[10px] font-semibold text-accent underline">
+                                                {parents.dam ? 'Change' : 'Assign'}
+                                            </button>
+                                            {parents.dam && (
+                                                <button onClick={() => handleAssignParent('dam', null)} className="text-[10px] font-semibold text-red-500 underline">Clear</button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -511,6 +1129,53 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                     onClose={() => setShowCollections(false)}
                 />
             )}
+
+            {enlargedImage && (
+                <div
+                    className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+                    onClick={() => setEnlargedImage(null)}
+                >
+                    <div className="relative max-w-full max-h-full flex flex-col items-center gap-4">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setEnlargedImage(null); }}
+                            className="self-end text-white"
+                        >
+                            <X size={28} />
+                        </button>
+                        <img
+                            src={enlargedImage}
+                            alt="Enlarged view"
+                            className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleDownloadImage(enlargedImage); }}
+                            className="bg-accent text-white px-5 py-2 rounded-lg flex items-center gap-2 font-semibold text-sm"
+                        >
+                            <Download size={18} /> Download Image
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {pickerRole && (
+                <ParentPickerModal
+                    title={pickerRole === 'sire' ? 'Select Sire' : 'Select Dam'}
+                    requiredGenders={pickerRole === 'sire' ? ['Male', 'Intersex', 'Unknown'] : ['Female', 'Intersex', 'Unknown']}
+                    currentAnimalId={animal.id_public}
+                    authToken={authToken}
+                    onSelect={(a) => handleAssignParent(pickerRole, a)}
+                    onClose={() => setPickerRole(null)}
+                />
+            )}
+
+            {pickerTarget && (
+                <ProfilePickerModal
+                    title={pickerTarget === 'breeder' ? 'Link Breeder' : 'Link Owner'}
+                    onSelect={handleSelectProfile}
+                    onClose={() => setPickerTarget(null)}
+                />
+            )}
         </div>
     );
 };
@@ -521,6 +1186,70 @@ const Field = ({ label, children }) => (
         <div className="mt-1">{children}</div>
     </label>
 );
+
+const CollapsibleSection = ({ title, open, onToggle, children }) => (
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <button type="button" onClick={onToggle} className="w-full flex items-center justify-between p-4">
+            <span className="text-sm font-bold text-gray-800">{title}</span>
+            <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
+    </div>
+);
+
+// Read-only rendering of a record-array field, used by the non-editing Records view.
+const RecordListView = ({ label, records, renderItem }) => {
+    const list = Array.isArray(records) ? records : [];
+    if (list.length === 0) return null;
+    return (
+        <div>
+            <p className="text-xs font-bold text-gray-400 uppercase mb-1">{label}</p>
+            <div className="space-y-1">
+                {list.map((r, i) => <p key={r.id || i} className="text-xs text-gray-600">{renderItem(r)}</p>)}
+            </div>
+        </div>
+    );
+};
+
+// Generic add/edit/delete list editor for the Animal's record-array fields (vetVisits, medications, etc).
+const RecordListEditor = ({ label, records, fields, defaults, onChange }) => {
+    const list = Array.isArray(records) ? records : [];
+    const update = (idx, key, value) => onChange(list.map((r, i) => (i === idx ? { ...r, [key]: value } : r)));
+    const remove = (idx) => onChange(list.filter((_, i) => i !== idx));
+    const add = () => onChange([...list, { id: Date.now().toString(), ...defaults }]);
+
+    return (
+        <div className="space-y-2">
+            <p className="text-xs font-bold text-gray-400 uppercase">{label}</p>
+            {list.map((entry, idx) => (
+                <div key={entry.id || idx} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                    <div className="flex justify-end -mt-1 -mr-1">
+                        <button type="button" onClick={() => remove(idx)} className="p-1 text-gray-400"><X size={14} /></button>
+                    </div>
+                    {fields.map(({ key, label: fLabel, type, options }) => (
+                        <Field key={key} label={fLabel}>
+                            {type === 'select' ? (
+                                <select value={entry[key] || ''} onChange={(e) => update(idx, key, e.target.value)} className="input">
+                                    {options.map((o) => <option key={o} value={o}>{o}</option>)}
+                                </select>
+                            ) : (
+                                <input
+                                    type={type || 'text'}
+                                    value={type === 'date' ? (entry[key] ? String(entry[key]).slice(0, 10) : '') : (entry[key] ?? '')}
+                                    onChange={(e) => update(idx, key, e.target.value)}
+                                    className="input"
+                                />
+                            )}
+                        </Field>
+                    ))}
+                </div>
+            ))}
+            <button type="button" onClick={add} className="w-full flex items-center justify-center gap-1 text-xs font-semibold text-accent border border-dashed border-accent/50 rounded-lg py-2">
+                <Plus size={14} /> Add
+            </button>
+        </div>
+    );
+};
 
 const Row = ({ label, value }) => (
     <div className="flex justify-between gap-3">

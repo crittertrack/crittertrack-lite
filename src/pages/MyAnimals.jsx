@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Plus, Loader2 } from 'lucide-react';
+import { Search, Plus, Loader2, X } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalCard from '../components/AnimalCard';
 import QuickAddAnimalModal from '../components/QuickAddAnimalModal';
@@ -17,6 +17,19 @@ const SORT_OPTIONS = [
     { key: 'age-asc', label: 'Age (Youngest)' },
     { key: 'age-desc', label: 'Age (Oldest)' },
 ];
+const DEFAULT_FILTERS = { search: '', speciesFilter: 'All Species', genderFilter: 'All Genders', statusFilter: 'All Statuses', sortBy: 'age-asc' };
+const FILTERS_STORAGE_KEY = 'ct_lite_myanimals_filters';
+
+// Persists search/species/gender/status/sort across navigation and app restarts, since users
+// often tap into an animal and back and don't want to re-set their filters every time.
+const loadStoredFilters = () => {
+    try {
+        const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+        return raw ? { ...DEFAULT_FILTERS, ...JSON.parse(raw) } : DEFAULT_FILTERS;
+    } catch {
+        return DEFAULT_FILTERS;
+    }
+};
 
 // Collection keys match Collections.jsx so /animals?collection=X can be deep-linked into.
 
@@ -29,12 +42,30 @@ const MyAnimals = ({ authToken }) => {
     const [animals, setAnimals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [ownedMode, setOwnedMode] = useState('owned'); // 'owned' | 'all'
-    const [search, setSearch] = useState('');
-    const [speciesFilter, setSpeciesFilter] = useState('All Species');
-    const [genderFilter, setGenderFilter] = useState('All Genders');
-    const [statusFilter, setStatusFilter] = useState('All Statuses');
-    const [sortBy, setSortBy] = useState('age-asc');
+    const [storedFilters] = useState(loadStoredFilters);
+    const [search, setSearch] = useState(storedFilters.search);
+    const [speciesFilter, setSpeciesFilter] = useState(storedFilters.speciesFilter);
+    const [genderFilter, setGenderFilter] = useState(storedFilters.genderFilter);
+    const [statusFilter, setStatusFilter] = useState(storedFilters.statusFilter);
+    const [sortBy, setSortBy] = useState(storedFilters.sortBy);
     const [showAdd, setShowAdd] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({ search, speciesFilter, genderFilter, statusFilter, sortBy }));
+    }, [search, speciesFilter, genderFilter, statusFilter, sortBy]);
+
+    const hasActiveFilters = search.trim() !== '' || speciesFilter !== DEFAULT_FILTERS.speciesFilter
+        || genderFilter !== DEFAULT_FILTERS.genderFilter || statusFilter !== DEFAULT_FILTERS.statusFilter
+        || sortBy !== DEFAULT_FILTERS.sortBy;
+
+    const clearFilters = () => {
+        setSearch(DEFAULT_FILTERS.search);
+        setSpeciesFilter(DEFAULT_FILTERS.speciesFilter);
+        setGenderFilter(DEFAULT_FILTERS.genderFilter);
+        setStatusFilter(DEFAULT_FILTERS.statusFilter);
+        setSortBy(DEFAULT_FILTERS.sortBy);
+    };
+
 
     const fetchAnimals = useCallback(async () => {
         if (!authToken) return;
@@ -105,7 +136,23 @@ const MyAnimals = ({ authToken }) => {
     return (
         <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
             <TopBar
-                title={collectionKey ? (collections.find((c) => c.id === collectionKey)?.name || 'Collection') : `My Animals (${totalCount})`}
+                title={
+                    collectionKey
+                        ? (collections.find((c) => c.id === collectionKey)?.name || 'Collection')
+                        : (
+                            <span className="inline-flex items-center gap-2">
+                                My Animals ({totalCount})
+                                {hasActiveFilters && (
+                                    <button
+                                        onClick={clearFilters}
+                                        className="inline-flex items-center gap-0.5 text-[11px] font-semibold bg-white/20 hover:bg-white/30 rounded-full px-2 py-0.5 transition"
+                                    >
+                                        <X size={11} /> Clear
+                                    </button>
+                                )}
+                            </span>
+                        )
+                }
                 onBack={collectionKey ? () => { searchParams.delete('collection'); setSearchParams(searchParams); } : undefined}
                 safeAreaTop={false}
                 right={

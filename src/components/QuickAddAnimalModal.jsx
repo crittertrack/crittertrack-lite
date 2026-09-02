@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
-import { X, Loader2, ChevronLeft, Search, Plus } from 'lucide-react';
+import { X, Loader2, ChevronLeft, Search, Plus, Camera, Cat } from 'lucide-react';
 import { API_BASE_URL } from '../utils/apiConfig';
 import { getSpeciesCategory, getAppearanceFields } from '../utils/appearanceFields';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Intersex', 'Mixed', 'Unknown'];
+const STATUS_OPTIONS = ['Pet', 'Growout', 'Breeder', 'Available', 'Booked', 'Retired', 'Deceased', 'Rehomed', 'Unknown'];
 const FALLBACK_CATEGORIES = ['Mammal', 'Reptile', 'Bird', 'Fish', 'Amphibian', 'Invertebrate', 'Other'];
 
 // Multi-step flow: quick-pick an already-owned species -> or browse by category -> species,
@@ -23,6 +24,16 @@ const QuickAddAnimalModal = ({ authToken, onClose, onCreated, initialValues = {}
     const [form, setForm] = useState({ prefix: '', name: '', suffix: '', species: '', gender: 'Unknown', birthDate: '', status: 'Pet', ...initialValues });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const fileInputRef = useRef(null);
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+
+    const handleImagePick = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    };
 
     useEffect(() => {
         Promise.all([
@@ -73,7 +84,18 @@ const QuickAddAnimalModal = ({ authToken, onClose, onCreated, initialValues = {}
         setSaving(true);
         setError('');
         try {
-            const response = await axios.post(`${API_BASE_URL}/animals`, { ...form, ...extraFields, isOwned: true }, {
+            const payload = { ...form, ...extraFields, isOwned: true };
+            if (imageFile) {
+                const fd = new FormData();
+                fd.append('file', imageFile);
+                fd.append('type', 'animal');
+                const uploadRes = await axios.post(`${API_BASE_URL}/upload`, fd, {
+                    headers: { Authorization: `Bearer ${authToken}` },
+                });
+                const url = uploadRes.data?.url;
+                if (url) { payload.imageUrl = url; payload.photoUrl = url; }
+            }
+            const response = await axios.post(`${API_BASE_URL}/animals`, payload, {
                 headers: { Authorization: `Bearer ${authToken}` }
             });
             onCreated(response.data);
@@ -148,13 +170,30 @@ const QuickAddAnimalModal = ({ authToken, onClose, onCreated, initialValues = {}
                     ) : (
                         <form onSubmit={handleSave} className="space-y-3">
                             {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
-                            <button
-                                type="button"
-                                onClick={() => goto(ownedSpecies.length ? 'quickPick' : 'category')}
-                                className="text-xs font-semibold text-accent underline"
-                            >
-                                {form.species || 'Choose species'} · Change
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200"
+                                >
+                                    {imagePreview ? (
+                                        <img src={imagePreview} alt="Animal" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Cat size={24} className="text-gray-400" />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                                        <Camera size={16} className="text-white" />
+                                    </div>
+                                </button>
+                                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
+                                <button
+                                    type="button"
+                                    onClick={() => goto(ownedSpecies.length ? 'quickPick' : 'category')}
+                                    className="text-xs font-semibold text-accent underline"
+                                >
+                                    {form.species || 'Choose species'} · Change
+                                </button>
+                            </div>
                             <div className="grid grid-cols-4 gap-2">
                                 <div>
                                     <label className="text-xs font-semibold text-gray-500">Prefix</label>
@@ -177,9 +216,15 @@ const QuickAddAnimalModal = ({ authToken, onClose, onCreated, initialValues = {}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-500">Birth Date</label>
-                                    <input type="date" value={form.birthDate} onChange={set('birthDate')} className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                                    <label className="text-xs font-semibold text-gray-500">Status</label>
+                                    <select value={form.status} onChange={set('status')} className="w-full mt-1 px-2 py-2 rounded-lg border border-gray-200 text-sm">
+                                        {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                                    </select>
                                 </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500">Birth Date</label>
+                                <input type="date" value={form.birthDate} onChange={set('birthDate')} className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm" />
                             </div>
                             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
                                 {appearanceFields.map(({ key, label }) => (

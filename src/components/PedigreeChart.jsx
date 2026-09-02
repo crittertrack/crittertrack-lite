@@ -372,7 +372,8 @@ const PedigreeChart = ({ animalId, litterId = null, currentUserIdPublic = null, 
             const ratio = drawW / canvas.width;
             const drawH = canvas.height * ratio;
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [pageW, drawH + pad * 2] });
-            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', pad, pad, drawW, drawH);
+            // JPEG instead of lossless PNG - the full-res PNG embed made save/share crawl on native
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', pad, pad, drawW, drawH);
             const blob = pdf.output('blob');
             await downloadBlob(blob, `pedigree-${fileNameBase}.pdf`);
         } finally { setIsSaving(false); }
@@ -459,10 +460,10 @@ const PedigreeChart = ({ animalId, litterId = null, currentUserIdPublic = null, 
 
             <div className="flex gap-2 p-3 bg-white border-t border-gray-200">
                 <button onClick={downloadPDF} disabled={isSaving} className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-gray-900 font-semibold py-2 rounded-lg text-sm disabled:opacity-60">
-                    <Download size={15} /> {isSaving ? 'Saving…' : 'Save PDF'}
+                    {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} {isSaving ? 'Saving…' : 'Save PDF'}
                 </button>
                 <button onClick={downloadImage} disabled={isSaving} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 border border-gray-300 font-semibold py-2 rounded-lg text-sm disabled:opacity-60">
-                    <ImageIcon size={15} /> {isSaving ? 'Saving…' : 'Save Image'}
+                    {isSaving ? <Loader2 size={15} className="animate-spin" /> : <ImageIcon size={15} />} {isSaving ? 'Saving…' : 'Save Image'}
                 </button>
             </div>
         </div>

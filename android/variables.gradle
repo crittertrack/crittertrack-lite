@@ -1,7 +1,9 @@
 ext {
     minSdkVersion = 23
-    compileSdkVersion = 35
-    targetSdkVersion = 35
+    compileSdkVersion = 36
+    // Play Store requires targeting API 36 (Android 16) for new app/update submissions
+    // starting Aug 31 2026 — must stay in step with compileSdkVersion going forward.
+    targetSdkVersion = 36
     androidxActivityVersion = '1.9.2'
     androidxAppCompatVersion = '1.7.0'
     androidxCoordinatorLayoutVersion = '1.2.0'
