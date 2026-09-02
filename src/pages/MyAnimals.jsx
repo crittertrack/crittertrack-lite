@@ -134,7 +134,7 @@ const MyAnimals = ({ authToken }) => {
     }, [animals, ownedMode, speciesFilter, genderFilter, statusFilter, sortBy, search, collectionKey, animalMap]);
 
     return (
-        <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+        <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
             <TopBar
                 title={
                     collectionKey
@@ -176,12 +176,12 @@ const MyAnimals = ({ authToken }) => {
 
             <div className="px-4 pt-3 space-y-3">
                 <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-dark-text-muted" />
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search animals…"
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white shadow-sm text-sm focus:outline-none"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-dark-card-bg text-gray-900 dark:text-dark-text shadow-sm text-sm focus:outline-none"
                     />
                 </div>
 
@@ -190,28 +190,28 @@ const MyAnimals = ({ authToken }) => {
                         <select
                             value={speciesFilter}
                             onChange={(e) => setSpeciesFilter(e.target.value)}
-                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                            className="px-2 py-2 rounded-lg bg-white dark:bg-dark-card-bg shadow-sm text-xs font-semibold text-gray-600 dark:text-dark-text-secondary focus:outline-none"
                         >
                             {speciesOptions.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                         <select
                             value={genderFilter}
                             onChange={(e) => setGenderFilter(e.target.value)}
-                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                            className="px-2 py-2 rounded-lg bg-white dark:bg-dark-card-bg shadow-sm text-xs font-semibold text-gray-600 dark:text-dark-text-secondary focus:outline-none"
                         >
                             {GENDER_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
                         </select>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                            className="px-2 py-2 rounded-lg bg-white dark:bg-dark-card-bg shadow-sm text-xs font-semibold text-gray-600 dark:text-dark-text-secondary focus:outline-none"
                         >
                             {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                         </select>
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
-                            className="px-2 py-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-gray-600 focus:outline-none"
+                            className="px-2 py-2 rounded-lg bg-white dark:bg-dark-card-bg shadow-sm text-xs font-semibold text-gray-600 dark:text-dark-text-secondary focus:outline-none"
                         >
                             {SORT_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
                         </select>
@@ -221,7 +221,7 @@ const MyAnimals = ({ authToken }) => {
                 {loading ? (
                     <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
                 ) : filtered.length === 0 ? (
-                    <div className="text-center py-16 text-gray-400 text-sm">No animals found.</div>
+                    <div className="text-center py-16 text-gray-400 dark:text-dark-text-muted text-sm">No animals found.</div>
                 ) : (
                     <div className="space-y-2">
                         {filtered.map((animal) => (
@@ -233,7 +233,7 @@ const MyAnimals = ({ authToken }) => {
 
             <button
                 onClick={() => setShowAdd(true)}
-                className="fixed bottom-20 right-4 bg-accent text-white rounded-full shadow-lg px-4 py-3 flex items-center gap-2 font-semibold text-sm z-20"
+                className="fixed bottom-20 right-4 bg-accent dark:bg-dark-accent text-white rounded-full shadow-lg px-4 py-3 flex items-center gap-2 font-semibold text-sm z-20"
             >
                 <Plus size={18} /> Add Animal
             </button>

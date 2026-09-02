@@ -10,8 +10,17 @@
 
 @layer components {
   .input {
-    @apply w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40;
+    @apply w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card-bg text-gray-900 dark:text-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-accent/40;
   }
+}
+
+html, body {
+  /* Explicit themed background so overscroll bounce / safe-area gaps never reveal
+     the browser's default white instead of the app's page-bg/dark-bg color. */
+  background-color: #F1D1DC;
+}
+html.dark, html.dark body {
+  background-color: #121212;
 }
 
 body {

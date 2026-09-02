@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Loader2, LogIn, Mail, Eye, EyeOff, Heart } from 'lucide-react';
 import logo from '../assets/lite-logo.png';
 import { openExternalLink } from '../utils/externalLink';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Login = ({ onLogin, onShowRegister }) => {
     const [email, setEmail] = useState('');
@@ -24,7 +25,10 @@ const Login = ({ onLogin, onShowRegister }) => {
     };
 
     return (
-        <div className="min-h-screen bg-page-bg flex flex-col items-center justify-center px-6">
+        <div className="min-h-screen bg-page-bg dark:bg-dark-bg flex flex-col items-center justify-center px-6">
+            <div className="fixed top-4 right-4 z-30" style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}>
+                <ThemeToggle />
+            </div>
             <div className="w-full max-w-sm">
                 <button
                     type="button"
@@ -37,40 +41,40 @@ const Login = ({ onLogin, onShowRegister }) => {
 
                 <div className="text-center mb-8">
                     <img src={logo} alt="CritterTrack Lite" className="w-28 h-28 mx-auto mb-3 object-contain" />
-                    <h1 className="text-2xl font-bold text-gray-800">CritterTrack Lite</h1>
-                    <p className="text-sm text-gray-500 mt-1">Sign in with your CritterTrack account</p>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-dark-text">CritterTrack Lite</h1>
+                    <p className="text-sm text-gray-500 dark:text-dark-text-muted mt-1">Sign in with your CritterTrack account</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="bg-white dark:bg-dark-card-bg rounded-2xl shadow-sm p-5 space-y-4">
                     {error && (
-                        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>
+                        <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/60 rounded-lg px-3 py-2">{error}</div>
                     )}
                     <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted uppercase tracking-wide">Email</label>
                         <div className="mt-1 relative">
-                            <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-dark-text-muted" />
                             <input
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-accent/40 text-sm"
+                                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card-bg text-gray-900 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-accent/40 text-sm"
                                 placeholder="you@example.com"
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Password</label>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted uppercase tracking-wide">Password</label>
                         <div className="mt-1 relative">
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-3 pr-9 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-accent/40 text-sm"
+                                className="w-full pl-3 pr-9 py-2.5 rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card-bg text-gray-900 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-accent/40 text-sm"
                                 placeholder="••••••••"
                             />
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-dark-text-muted">
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
@@ -78,7 +82,7 @@ const Login = ({ onLogin, onShowRegister }) => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-60"
+                        className="w-full flex items-center justify-center gap-2 bg-accent dark:bg-dark-accent hover:bg-accent/90 dark:hover:bg-dark-accent/90 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-60"
                     >
                         {loading ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
                         {loading ? 'Signing in…' : 'Sign In'}
@@ -87,7 +91,7 @@ const Login = ({ onLogin, onShowRegister }) => {
                 <button onClick={onShowRegister} className="w-full text-center text-sm text-accent font-semibold mt-4">
                     Create Account
                 </button>
-                <p className="text-center text-xs text-gray-400 mt-3">Uses the same account as the full CritterTrack app</p>
+                <p className="text-center text-xs text-gray-400 dark:text-dark-text-muted mt-3">Uses the same account as the full CritterTrack app</p>
             </div>
         </div>
     );

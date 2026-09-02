@@ -72,7 +72,7 @@ const Collections = ({ authToken }) => {
     };
 
     return (
-        <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+        <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
             <TopBar
                 title="Collections"
                 safeAreaTop={false}
@@ -96,50 +96,50 @@ const Collections = ({ authToken }) => {
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
                         placeholder="New collection name..."
-                        className="flex-1 text-sm bg-white rounded-lg px-3 py-2.5 shadow-sm outline-none"
+                        className="flex-1 text-sm bg-white dark:bg-dark-card-bg text-gray-900 dark:text-dark-text rounded-lg px-3 py-2.5 shadow-sm outline-none"
                     />
-                    <button type="submit" className="p-2.5 rounded-lg bg-accent text-white flex-shrink-0"><Plus size={18} /></button>
+                    <button type="submit" className="p-2.5 rounded-lg bg-accent dark:bg-dark-accent text-white flex-shrink-0"><Plus size={18} /></button>
                 </form>
 
                 {loading ? (
                     <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
                 ) : groups.length === 0 ? (
-                    <p className="text-center text-gray-400 text-sm py-16">No collections yet. Create one above to start organizing your animals.</p>
+                    <p className="text-center text-gray-400 dark:text-dark-text-muted text-sm py-16">No collections yet. Create one above to start organizing your animals.</p>
                 ) : (
                     groups.map((g) => (
                         editingId === g.id ? (
-                            <form key={g.id} onSubmit={commitEdit} className="flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm">
+                            <form key={g.id} onSubmit={commitEdit} className="flex items-center gap-2 bg-white dark:bg-dark-card-bg rounded-xl p-3 shadow-sm">
                                 <input
                                     autoFocus
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
-                                    className="flex-1 text-sm px-2 py-1.5 rounded-lg border border-gray-200 outline-none"
+                                    className="flex-1 text-sm px-2 py-1.5 rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card-bg text-gray-900 dark:text-dark-text outline-none"
                                 />
-                                <button type="submit" className="p-1.5 rounded-full bg-green-100 text-green-700"><Check size={16} /></button>
-                                <button type="button" onClick={() => setEditingId(null)} className="p-1.5 rounded-full bg-gray-100 text-gray-500"><X size={16} /></button>
+                                <button type="submit" className="p-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"><Check size={16} /></button>
+                                <button type="button" onClick={() => setEditingId(null)} className="p-1.5 rounded-full bg-gray-100 dark:bg-dark-surface text-gray-500 dark:text-dark-text-muted"><X size={16} /></button>
                             </form>
                         ) : (
-                            <div key={g.id} className="w-full flex items-center gap-2 bg-white rounded-xl p-3 shadow-sm">
+                            <div key={g.id} className="w-full flex items-center gap-2 bg-white dark:bg-dark-card-bg rounded-xl p-3 shadow-sm">
                                 <button
                                     onClick={() => navigate(`/animals?collection=${g.id}`)}
                                     className="flex-1 flex items-center gap-3 text-left min-w-0"
                                 >
                                     <div className="flex -space-x-3 flex-shrink-0">
                                         {g.matches.slice(0, 3).map((a) => (
-                                            <div key={a.id_public} className="w-9 h-9 rounded-full overflow-hidden border-2 border-white bg-gray-100">
+                                            <div key={a.id_public} className="w-9 h-9 rounded-full overflow-hidden border-2 border-white dark:border-dark-card-bg bg-gray-100 dark:bg-dark-surface">
                                                 <AnimalImage src={a.imageUrl || a.photoUrl} alt={a.name} iconSize={14} />
                                             </div>
                                         ))}
-                                        {g.matches.length === 0 && <div className="w-9 h-9 rounded-full bg-gray-100" />}
+                                        {g.matches.length === 0 && <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark-surface" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-gray-800 truncate">{g.name}</p>
-                                        <p className="text-xs text-gray-500">{g.matches.length} animal{g.matches.length === 1 ? '' : 's'}</p>
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate">{g.name}</p>
+                                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">{g.matches.length} animal{g.matches.length === 1 ? '' : 's'}</p>
                                     </div>
                                 </button>
-                                <button onClick={() => startEdit(g)} className="p-1.5 rounded-full text-gray-400 flex-shrink-0"><Pencil size={15} /></button>
-                                <button onClick={() => handleDelete(g)} className="p-1.5 rounded-full text-gray-400 flex-shrink-0"><Trash2 size={15} /></button>
-                                <ChevronRight size={18} className="text-gray-300 flex-shrink-0" />
+                                <button onClick={() => startEdit(g)} className="p-1.5 rounded-full text-gray-400 dark:text-dark-text-muted flex-shrink-0"><Pencil size={15} /></button>
+                                <button onClick={() => handleDelete(g)} className="p-1.5 rounded-full text-gray-400 dark:text-dark-text-muted flex-shrink-0"><Trash2 size={15} /></button>
+                                <ChevronRight size={18} className="text-gray-300 dark:text-dark-text-muted flex-shrink-0" />
                             </div>
                         )
                     ))

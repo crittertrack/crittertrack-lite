@@ -104,7 +104,7 @@ const Enclosures = ({ authToken }) => {
     };
 
     return (
-        <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+        <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
             <TopBar
                 title="Enclosures"
                 safeAreaTop={false}
@@ -116,7 +116,7 @@ const Enclosures = ({ authToken }) => {
             />
             <div className="px-4 pt-3 space-y-2.5">
                 {showAddForm && (
-                    <form onSubmit={handleCreate} className="bg-white rounded-xl p-3 shadow-sm space-y-2">
+                    <form onSubmit={handleCreate} className="bg-white dark:bg-dark-card-bg rounded-xl p-3 shadow-sm space-y-2">
                         <input
                             autoFocus
                             value={newEnc.name}
@@ -143,10 +143,10 @@ const Enclosures = ({ authToken }) => {
                             </select>
                         </div>
                         <div className="flex gap-2">
-                            <button type="submit" disabled={creating || !newEnc.name.trim()} className="flex-1 flex items-center justify-center gap-1 bg-accent text-white text-xs font-semibold py-1.5 rounded-lg disabled:opacity-50">
+                            <button type="submit" disabled={creating || !newEnc.name.trim()} className="flex-1 flex items-center justify-center gap-1 bg-accent dark:bg-dark-accent text-white text-xs font-semibold py-1.5 rounded-lg disabled:opacity-50">
                                 {creating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Create
                             </button>
-                            <button type="button" onClick={() => { setShowAddForm(false); setNewEnc(emptyNewEnc); }} className="flex-1 flex items-center justify-center gap-1 bg-gray-100 text-gray-600 text-xs font-semibold py-1.5 rounded-lg">
+                            <button type="button" onClick={() => { setShowAddForm(false); setNewEnc(emptyNewEnc); }} className="flex-1 flex items-center justify-center gap-1 bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-dark-text-secondary text-xs font-semibold py-1.5 rounded-lg">
                                 <X size={14} /> Cancel
                             </button>
                         </div>
@@ -155,34 +155,34 @@ const Enclosures = ({ authToken }) => {
                 {loading ? (
                     <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
                 ) : enclosures.length === 0 ? (
-                    <div className="text-center py-16 text-gray-400 text-sm">No enclosures yet.</div>
+                    <div className="text-center py-16 text-gray-400 dark:text-dark-text-muted text-sm">No enclosures yet.</div>
                 ) : (
                     enclosures.map((enc) => (
-                        <div key={enc._id} className="bg-white rounded-xl p-3 shadow-sm">
+                        <div key={enc._id} className="bg-white dark:bg-dark-card-bg rounded-xl p-3 shadow-sm">
                             {editingId === enc._id ? (
                                 <div className="space-y-2">
                                     <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className="input" placeholder="Name" />
                                     <input type="number" value={editForm.capacity} onChange={(e) => setEditForm((f) => ({ ...f, capacity: e.target.value }))} className="input" placeholder="Capacity" />
                                     <div className="flex gap-2">
-                                        <button onClick={() => saveEdit(enc)} className="flex-1 flex items-center justify-center gap-1 bg-accent text-white text-xs font-semibold py-1.5 rounded-lg"><Check size={14} /> Save</button>
-                                        <button onClick={() => setEditingId(null)} className="flex-1 flex items-center justify-center gap-1 bg-gray-100 text-gray-600 text-xs font-semibold py-1.5 rounded-lg"><X size={14} /> Cancel</button>
+                                        <button onClick={() => saveEdit(enc)} className="flex-1 flex items-center justify-center gap-1 bg-accent dark:bg-dark-accent text-white text-xs font-semibold py-1.5 rounded-lg"><Check size={14} /> Save</button>
+                                        <button onClick={() => setEditingId(null)} className="flex-1 flex items-center justify-center gap-1 bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-dark-text-secondary text-xs font-semibold py-1.5 rounded-lg"><X size={14} /> Cancel</button>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-400">
+                                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-surface flex-shrink-0 flex items-center justify-center text-gray-400 dark:text-dark-text-muted">
                                         {enc.imageUrl ? <img src={enc.imageUrl} alt={enc.name} className="w-full h-full object-cover" /> : <Home size={20} />}
                                     </div>
                                     <button onClick={() => setSelected(enc)} className="flex-1 min-w-0 text-left">
-                                        <p className="text-sm font-semibold text-gray-800 truncate">{enc.name}</p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate">{enc.name}</p>
+                                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">
                                             {enc.enclosureType || 'Enclosure'} • {countsByEnclosure[enc._id] || 0}{enc.capacity ? `/${enc.capacity}` : ''} animals
                                         </p>
                                         {formatDimensions(enc.dimensions) && (
-                                            <p className="text-xs text-gray-400">{formatDimensions(enc.dimensions)}</p>
+                                            <p className="text-xs text-gray-400 dark:text-dark-text-muted">{formatDimensions(enc.dimensions)}</p>
                                         )}
                                     </button>
-                                    <button onClick={() => startEdit(enc)} className="p-1.5 text-gray-400"><Pencil size={15} /></button>
+                                    <button onClick={() => startEdit(enc)} className="p-1.5 text-gray-400 dark:text-dark-text-muted"><Pencil size={15} /></button>
                                 </div>
                             )}
                         </div>

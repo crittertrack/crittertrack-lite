@@ -417,16 +417,16 @@ const PedigreeChart = ({ animalId, litterId = null, currentUserIdPublic = null, 
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
-            <div className="flex items-center justify-between px-3 py-2.5 bg-white border-b border-gray-200">
-                <h2 className="text-sm font-bold text-gray-800">Pedigree Certificate</h2>
+            <div className="flex items-center justify-between px-3 py-2.5 bg-white dark:bg-dark-card-bg border-b border-gray-200 dark:border-dark-border">
+                <h2 className="text-sm font-bold text-gray-800 dark:text-dark-text">Pedigree Certificate</h2>
                 <div className="flex items-center gap-2">
                     <input type="range" min={1} max={4} value={generations} onChange={(e) => setGenerations(Number(e.target.value))} className="w-16 accent-accent" />
-                    <span className="text-xs font-bold text-gray-500 w-3">{generations}</span>
-                    <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100"><X size={18} /></button>
+                    <span className="text-xs font-bold text-gray-500 dark:text-dark-text-muted w-3">{generations}</span>
+                    <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-dark-surface text-gray-800 dark:text-dark-text"><X size={18} /></button>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-auto bg-gray-100 p-3">
+            <div className="flex-1 overflow-auto bg-gray-100 dark:bg-dark-bg p-3">
                 {loading ? (
                     <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
                 ) : (
@@ -458,11 +458,11 @@ const PedigreeChart = ({ animalId, litterId = null, currentUserIdPublic = null, 
                 )}
             </div>
 
-            <div className="flex gap-2 p-3 bg-white border-t border-gray-200">
+            <div className="flex gap-2 p-3 bg-white dark:bg-dark-card-bg border-t border-gray-200 dark:border-dark-border">
                 <button onClick={downloadPDF} disabled={isSaving} className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-gray-900 font-semibold py-2 rounded-lg text-sm disabled:opacity-60">
                     {isSaving ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />} {isSaving ? 'Saving…' : 'Save PDF'}
                 </button>
-                <button onClick={downloadImage} disabled={isSaving} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-700 border border-gray-300 font-semibold py-2 rounded-lg text-sm disabled:opacity-60">
+                <button onClick={downloadImage} disabled={isSaving} className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 dark:bg-dark-surface text-gray-700 dark:text-dark-text-secondary border border-gray-300 dark:border-dark-border font-semibold py-2 rounded-lg text-sm disabled:opacity-60">
                     {isSaving ? <Loader2 size={15} className="animate-spin" /> : <ImageIcon size={15} />} {isSaving ? 'Saving…' : 'Save Image'}
                 </button>
             </div>

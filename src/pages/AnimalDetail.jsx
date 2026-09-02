@@ -21,18 +21,18 @@ const STATUS_OPTIONS = ['Pet', 'Growout', 'Breeder', 'Available', 'Booked', 'Ret
 const GENDER_OPTIONS = ['Male', 'Female', 'Intersex', 'Mixed', 'Unknown'];
 const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'Negotiable'];
 const HEALTH_STATUS_BADGE = {
-    Healthy: 'bg-green-100 text-green-700',
-    Monitoring: 'bg-yellow-100 text-yellow-700',
-    Concern: 'bg-orange-100 text-orange-700',
-    Critical: 'bg-red-100 text-red-700',
+    Healthy: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+    Monitoring: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+    Concern: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+    Critical: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
 };
 const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', CAD: 'C$', AUD: 'A$' };
 const formatMoney = (amount, currency) => (currency === 'Negotiable' || !amount) ? (currency === 'Negotiable' ? 'Negotiable' : null) : `${CURRENCY_SYMBOLS[currency] || ''}${amount}`;
 // Same stage badge styling as Breeding.jsx's LitterCard, for litter-tracked offspring groups.
 const BADGE_STYLES = {
-    Planned: 'bg-indigo-100 text-indigo-700',
-    Mated: 'bg-sky-100 text-sky-700',
-    Pregnant: 'bg-pink-100 text-pink-700',
+    Planned: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+    Mated: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300',
+    Pregnant: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
 };
 
 const authHeaders = (authToken) => ({ headers: { Authorization: `Bearer ${authToken}` } });
@@ -311,7 +311,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-page-bg flex items-center justify-center">
+            <div className="min-h-screen bg-page-bg dark:bg-dark-bg flex items-center justify-center">
                 <Loader2 className="animate-spin text-accent" size={28} />
             </div>
         );
@@ -319,9 +319,9 @@ const AnimalDetail = ({ authToken, userProfile }) => {
 
     if (!animal) {
         return (
-            <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+            <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
                 <TopBar title="Animal" onBack={() => navigate(-1)} />
-                <p className="text-center text-gray-400 text-sm py-16">Animal not found.</p>
+                <p className="text-center text-gray-400 dark:text-dark-text-muted text-sm py-16">Animal not found.</p>
             </div>
         );
     }
@@ -352,7 +352,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     );
 
     return (
-        <div className="min-h-screen bg-page-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+        <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
             <TopBar
                 title={displayName}
                 onBack={() => navigate(-1)}
@@ -376,15 +376,15 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                 <button
                     type="button"
                     onClick={() => (animal.imageUrl || animal.photoUrl) && setEnlargedImage(animal.imageUrl || animal.photoUrl)}
-                    className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-md bg-white block"
+                    className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-md bg-white dark:bg-dark-card-bg block"
                 >
                     <AnimalImage src={animal.imageUrl || animal.photoUrl} alt={displayName} iconSize={40} />
                 </button>
             </div>
 
-            <div className="mx-4 mt-3 mb-3 bg-white rounded-2xl shadow-sm p-4">
+            <div className="mx-4 mt-3 mb-3 bg-white dark:bg-dark-card-bg rounded-2xl shadow-sm p-4">
                 <div className="text-center">
-                    <p className="font-bold text-gray-800 flex items-center justify-center gap-1.5 flex-wrap">
+                    <p className="font-bold text-gray-800 dark:text-dark-text flex items-center justify-center gap-1.5 flex-wrap">
                         {animal.gender === 'Male' && <Mars size={14} className="text-info-blue" />}
                         {animal.gender === 'Female' && <Venus size={14} className="text-accent" />}
                         {displayName}
@@ -394,17 +394,17 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             </span>
                         )}
                         {animal.isForSale && (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-800">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                                 For Sale{formatMoney(animal.salePriceAmount, animal.salePriceCurrency) ? ` \u00b7 ${formatMoney(animal.salePriceAmount, animal.salePriceCurrency)}` : ''}
                             </span>
                         )}
                         {animal.availableForBreeding && (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">
                                 Stud{formatMoney(animal.studFeeAmount, animal.studFeeCurrency) ? ` \u00b7 ${formatMoney(animal.studFeeAmount, animal.studFeeCurrency)}` : ''}
                             </span>
                         )}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1 flex-wrap">
+                    <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-0.5 flex items-center justify-center gap-1 flex-wrap">
                         <span>{animal.species}</span>
                         {animal.status && <><span>•</span><span className="font-semibold text-accent">{animal.status}</span></>}
                         {animal.id_public && <><span>•</span><span>{animal.id_public}</span></>}
@@ -414,7 +414,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             <button
                                 onClick={handleToggleOwned}
                                 className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border border-black ${
-                                    animal.isOwned !== false ? 'bg-white text-accent' : 'bg-gray-200 text-gray-600'
+                                    animal.isOwned !== false ? 'bg-white dark:bg-dark-card-bg text-accent' : 'bg-gray-200 dark:bg-dark-surface-hover text-gray-600 dark:text-dark-text-secondary'
                                 }`}
                             >
                                 {animal.isOwned !== false ? <Heart size={12} /> : <HeartOff size={12} />}
@@ -423,7 +423,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             <button
                                 onClick={handleTogglePublic}
                                 className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border border-black ${
-                                    animal.isDisplay ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                                    animal.isDisplay ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-200 dark:bg-dark-surface-hover text-gray-600 dark:text-dark-text-secondary'
                                 }`}
                             >
                                 {animal.isDisplay ? <Eye size={12} /> : <EyeOff size={12} />}
@@ -440,7 +440,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                         key={t}
                         onClick={() => setTab(t)}
                         className={`flex-1 py-2 rounded-lg text-xs font-semibold transition ${
-                            tab === t ? 'bg-accent text-white' : 'bg-white text-gray-500'
+                            tab === t ? 'bg-accent dark:bg-dark-accent text-white' : 'bg-white dark:bg-dark-card-bg text-gray-500 dark:text-dark-text-muted'
                         }`}
                     >
                         {t}
@@ -485,7 +485,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             <CollapsibleSection title="Ownership" open={openSections.ownership} onToggle={() => toggleSection('ownership')}>
                                 <label className="flex items-center gap-2">
                                     <input type="checkbox" checked={!!form.isForSale} onChange={setChecked('isForSale')} className="w-4 h-4 accent-accent" />
-                                    <span className="text-xs font-semibold text-gray-500">Available for Sale</span>
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Available for Sale</span>
                                 </label>
                                 {form.isForSale && (
                                     <div className="flex gap-2 pl-6">
@@ -497,7 +497,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                 )}
                                 <label className="flex items-center gap-2">
                                     <input type="checkbox" checked={!!form.availableForBreeding} onChange={setChecked('availableForBreeding')} className="w-4 h-4 accent-accent" />
-                                    <span className="text-xs font-semibold text-gray-500">Available for Stud/Breeding</span>
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Available for Stud/Breeding</span>
                                 </label>
                                 {form.availableForBreeding && (
                                     <div className="flex gap-2 pl-6">
@@ -507,7 +507,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         <input type="number" placeholder="Fee" value={form.studFeeAmount ?? ''} onChange={set('studFeeAmount')} disabled={form.studFeeCurrency === 'Negotiable'} className="input flex-1" />
                                     </div>
                                 )}
-                                <div className="border-t border-gray-100 pt-3 space-y-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3 space-y-3">
                                     <Field label="Breeder">
                                         <div className="flex gap-2">
                                             <input
@@ -515,15 +515,15 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                                 onChange={set('manualBreederName')}
                                                 disabled={!!form.breederId_public}
                                                 placeholder="Type a name..."
-                                                className="input flex-1 disabled:bg-gray-100 disabled:text-gray-500"
+                                                className="input flex-1 disabled:bg-gray-100 dark:disabled:bg-dark-surface disabled:text-gray-500 dark:disabled:text-dark-text-muted"
                                             />
                                             {form.breederId_public ? (
-                                                <button type="button" onClick={() => clearProfileLink('breeder')} className="px-2.5 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                                                <button type="button" onClick={() => clearProfileLink('breeder')} className="px-2.5 rounded-lg bg-gray-100 dark:bg-dark-surface text-gray-500 dark:text-dark-text-muted"><X size={14} /></button>
                                             ) : (
-                                                <button type="button" onClick={() => setPickerTarget('breeder')} className="px-2.5 rounded-lg bg-gray-100 text-accent text-xs font-semibold whitespace-nowrap">Link CTUID</button>
+                                                <button type="button" onClick={() => setPickerTarget('breeder')} className="px-2.5 rounded-lg bg-gray-100 dark:bg-dark-surface text-accent text-xs font-semibold whitespace-nowrap">Link CTUID</button>
                                             )}
                                         </div>
-                                        {form.breederId_public && <p className="text-[11px] text-gray-400 mt-1">Linked: {breederInfo?.breederName || breederInfo?.personalName || form.breederId_public}</p>}
+                                        {form.breederId_public && <p className="text-[11px] text-gray-400 dark:text-dark-text-muted mt-1">Linked: {breederInfo?.breederName || breederInfo?.personalName || form.breederId_public}</p>}
                                     </Field>
                                     <Field label="Owner">
                                         <div className="flex gap-2">
@@ -532,30 +532,30 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                                 onChange={set('manualownerName')}
                                                 disabled={!!form.ownerId_public}
                                                 placeholder="Type a name..."
-                                                className="input flex-1 disabled:bg-gray-100 disabled:text-gray-500"
+                                                className="input flex-1 disabled:bg-gray-100 dark:disabled:bg-dark-surface disabled:text-gray-500 dark:disabled:text-dark-text-muted"
                                             />
                                             {form.ownerId_public ? (
-                                                <button type="button" onClick={() => clearProfileLink('owner')} className="px-2.5 rounded-lg bg-gray-100 text-gray-500"><X size={14} /></button>
+                                                <button type="button" onClick={() => clearProfileLink('owner')} className="px-2.5 rounded-lg bg-gray-100 dark:bg-dark-surface text-gray-500 dark:text-dark-text-muted"><X size={14} /></button>
                                             ) : (
-                                                <button type="button" onClick={() => setPickerTarget('owner')} className="px-2.5 rounded-lg bg-gray-100 text-accent text-xs font-semibold whitespace-nowrap">Link CTUID</button>
+                                                <button type="button" onClick={() => setPickerTarget('owner')} className="px-2.5 rounded-lg bg-gray-100 dark:bg-dark-surface text-accent text-xs font-semibold whitespace-nowrap">Link CTUID</button>
                                             )}
                                         </div>
-                                        {form.ownerId_public && <p className="text-[11px] text-gray-400 mt-1">Linked: {ownerInfo?.breederName || ownerInfo?.personalName || form.ownerId_public}</p>}
+                                        {form.ownerId_public && <p className="text-[11px] text-gray-400 dark:text-dark-text-muted mt-1">Linked: {ownerInfo?.breederName || ownerInfo?.personalName || form.ownerId_public}</p>}
                                     </Field>
                                     <Field label="Co-Owner"><input value={form.coOwnership || ''} onChange={set('coOwnership')} className="input" /></Field>
                                 </div>
                             </CollapsibleSection>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl p-4 space-y-2 shadow-sm text-sm">
-                            <p className="font-bold text-gray-800 mb-1">Summary</p>
+                        <div className="bg-white dark:bg-dark-card-bg rounded-xl p-4 space-y-2 shadow-sm text-sm">
+                            <p className="font-bold text-gray-800 dark:text-dark-text mb-1">Summary</p>
                             <Row
                                 label="Birth Date"
                                 value={
                                     animal.birthDate && (
                                         <>
                                             {formatDate(animal.birthDate)}
-                                            {age && <span className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-pedigree-female-bg text-accent">{age}</span>}
+                                            {age && <span className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-pedigree-female-bg dark:bg-dark-accent/20 text-accent">{age}</span>}
                                         </>
                                     )
                                 }
@@ -566,7 +566,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             <Row label="Mother" value={parents.dam ? [parents.dam.prefix, parents.dam.name, parents.dam.suffix].filter(Boolean).join(' ') : null} />
                             <Row label="Enclosure" value={enclosureName} />
                             <button onClick={() => setShowCollections(true)} className="w-full flex justify-between gap-3">
-                                <span className="text-gray-400">Collection</span>
+                                <span className="text-gray-400 dark:text-dark-text-muted">Collection</span>
                                 <span className="text-accent font-medium text-right underline">
                                     {(animalMap[animal.id_public] || []).map((cid) => collections.find((c) => c.id === cid)?.name).filter(Boolean).join(', ') || 'Add to collection'}
                                 </span>
@@ -600,7 +600,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                 <Field label="Feeding Interval (hours)">
                                     <input type="number" value={form.feedingIntervalHours ?? ''} onChange={set('feedingIntervalHours')} className="input" />
                                 </Field>
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Care Tasks"
                                         records={form.animalCareTasks}
@@ -614,14 +614,14 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         ]}
                                     />
                                 </div>
-                                <div className="border-t border-gray-100 pt-3 space-y-2">
-                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Reproduction State</p>
-                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 space-y-1">
-                                        <p className="text-[11px] font-semibold text-gray-500">Auto-calculated from Litters:</p>
-                                        <p className="text-xs text-gray-600">📋 Planned Mating: {animal.isPlannedMating ? '✓' : '✗'}</p>
-                                        <p className="text-xs text-gray-600">⚡ In Mating: {animal.isInMating ? '✓' : '✗'}</p>
-                                        <p className="text-xs text-gray-600">🤰 Pregnant: {animal.isPregnant ? '✓' : '✗'}</p>
-                                        <p className="text-xs text-gray-600">🍼 Nursing: {animal.isNursing ? '✓' : '✗'}</p>
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3 space-y-2">
+                                    <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">Reproduction State</p>
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-700/60 rounded-lg p-2.5 space-y-1">
+                                        <p className="text-[11px] font-semibold text-gray-500 dark:text-dark-text-muted">Auto-calculated from Litters:</p>
+                                        <p className="text-xs text-gray-600 dark:text-dark-text-secondary">📋 Planned Mating: {animal.isPlannedMating ? '✓' : '✗'}</p>
+                                        <p className="text-xs text-gray-600 dark:text-dark-text-secondary">⚡ In Mating: {animal.isInMating ? '✓' : '✗'}</p>
+                                        <p className="text-xs text-gray-600 dark:text-dark-text-secondary">🤰 Pregnant: {animal.isPregnant ? '✓' : '✗'}</p>
+                                        <p className="text-xs text-gray-600 dark:text-dark-text-secondary">🍼 Nursing: {animal.isNursing ? '✓' : '✗'}</p>
                                     </div>
                                     <button
                                         type="button"
@@ -633,27 +633,27 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                                 setReproOverride(true);
                                             }
                                         }}
-                                        className={`w-full px-3 py-1.5 text-xs font-semibold rounded-lg ${reproOverride ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-accent'}`}
+                                        className={`w-full px-3 py-1.5 text-xs font-semibold rounded-lg ${reproOverride ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-dark-surface text-accent'}`}
                                     >
                                         {reproOverride ? 'Clear Override' : 'Enable Manual Override'}
                                     </button>
                                     {reproOverride && (
-                                        <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-2.5 space-y-1.5">
+                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-700/60 rounded-lg p-2.5 space-y-1.5">
                                             <label className="flex items-center gap-2">
                                                 <input type="checkbox" checked={!!form.isPlannedMating} onChange={setChecked('isPlannedMating')} className="w-4 h-4 accent-accent" />
-                                                <span className="text-xs font-semibold text-gray-500">Planned Mating</span>
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Planned Mating</span>
                                             </label>
                                             <label className="flex items-center gap-2">
                                                 <input type="checkbox" checked={!!form.isInMating} onChange={setChecked('isInMating')} className="w-4 h-4 accent-accent" />
-                                                <span className="text-xs font-semibold text-gray-500">In Mating</span>
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">In Mating</span>
                                             </label>
                                             <label className="flex items-center gap-2">
                                                 <input type="checkbox" checked={!!form.isPregnant} onChange={setChecked('isPregnant')} className="w-4 h-4 accent-accent" />
-                                                <span className="text-xs font-semibold text-gray-500">Pregnant</span>
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Pregnant</span>
                                             </label>
                                             <label className="flex items-center gap-2">
                                                 <input type="checkbox" checked={!!form.isNursing} onChange={setChecked('isNursing')} className="w-4 h-4 accent-accent" />
-                                                <span className="text-xs font-semibold text-gray-500">Nursing</span>
+                                                <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Nursing</span>
                                             </label>
                                         </div>
                                     )}
@@ -662,8 +662,8 @@ const AnimalDetail = ({ authToken, userProfile }) => {
 
                             <CollapsibleSection title="Healthcare" open={openRecordSections.healthcare} onToggle={() => toggleRecordSection('healthcare')}>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-gray-500">Health Status</span>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${HEALTH_STATUS_BADGE[form.healthStatusOverride || animal.healthStatus] || 'bg-gray-100 text-gray-500'}`}>
+                                    <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Health Status</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${HEALTH_STATUS_BADGE[form.healthStatusOverride || animal.healthStatus] || 'bg-gray-100 dark:bg-dark-surface text-gray-500 dark:text-dark-text-muted'}`}>
                                         {form.healthStatusOverride || animal.healthStatus || 'Healthy'}
                                     </span>
                                 </div>
@@ -682,8 +682,8 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     </Field>
                                 )}
 
-                                <div className="border-t border-gray-100 pt-3 space-y-3">
-                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Quarantine / Isolation</p>
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3 space-y-3">
+                                    <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">Quarantine / Isolation</p>
                                     <Field label="Status">
                                         <select
                                             value={form.quarantineDetails?.status || 'None'}
@@ -741,7 +741,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     )}
                                 </div>
 
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Vet Visits"
                                         records={form.vetVisits}
@@ -754,7 +754,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         ]}
                                     />
                                 </div>
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Medications"
                                         records={form.medications}
@@ -772,7 +772,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         ]}
                                     />
                                 </div>
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Vaccinations"
                                         records={form.vaccinations}
@@ -785,7 +785,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         ]}
                                     />
                                 </div>
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Deworming"
                                         records={form.dewormingRecords}
@@ -798,7 +798,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         ]}
                                     />
                                 </div>
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Medical Conditions"
                                         records={form.medicalConditions}
@@ -810,7 +810,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         ]}
                                     />
                                 </div>
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Allergies"
                                         records={form.allergies}
@@ -825,7 +825,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             </CollapsibleSection>
 
                             <CollapsibleSection title="Legal & Other" open={openRecordSections.legalOther} onToggle={() => toggleRecordSection('legalOther')}>
-                                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Purchase</p>
+                                <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">Purchase</p>
                                 <Field label="Purchase Date">
                                     <input type="date" value={form.purchaseDate ? form.purchaseDate.slice(0, 10) : ''} onChange={set('purchaseDate')} className="input" />
                                 </Field>
@@ -844,8 +844,8 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     <input value={form.sellerName || ''} onChange={set('sellerName')} className="input" />
                                 </Field>
 
-                                <div className="border-t border-gray-100 pt-3 space-y-3">
-                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Sale</p>
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3 space-y-3">
+                                    <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">Sale</p>
                                     <Field label="Sale Date">
                                         <input type="date" value={form.saleDate ? form.saleDate.slice(0, 10) : ''} onChange={set('saleDate')} className="input" />
                                     </Field>
@@ -862,7 +862,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     </Field>
                                 </div>
 
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Shows"
                                         records={form.shows}
@@ -879,7 +879,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     />
                                 </div>
 
-                                <div className="border-t border-gray-100 pt-3">
+                                <div className="border-t border-gray-100 dark:border-dark-border pt-3">
                                     <RecordListEditor
                                         label="Milestones"
                                         records={form.milestones}
@@ -896,7 +896,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             </CollapsibleSection>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl p-4 space-y-2 shadow-sm text-sm">
+                        <div className="bg-white dark:bg-dark-card-bg rounded-xl p-4 space-y-2 shadow-sm text-sm">
                             <Row label="Last Updated" value={formatDate(animal.updatedAt)} />
                             {animal.enclosureId && <Row label="Enclosure" value={enclosureName || animal.enclosureId} />}
                             {animal.lastFedDate && <Row label="Last Fed" value={formatDate(animal.lastFedDate)} />}
@@ -909,7 +909,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                 label="Health Status"
                                 value={
                                     (animal.healthStatusOverride || animal.healthStatus) && (
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${HEALTH_STATUS_BADGE[animal.healthStatusOverride || animal.healthStatus] || 'bg-gray-100 text-gray-500'}`}>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${HEALTH_STATUS_BADGE[animal.healthStatusOverride || animal.healthStatus] || 'bg-gray-100 dark:bg-dark-surface text-gray-500 dark:text-dark-text-muted'}`}>
                                             {animal.healthStatusOverride || animal.healthStatus}
                                         </span>
                                     )
@@ -929,7 +929,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             <RecordListView label="Allergies" records={animal.allergies} renderItem={(r) => `${r.name}${r.notes ? `: ${r.notes}` : ''}`} />
                             {(animal.purchaseDate || animal.purchasePrice != null || animal.purchaseLocation || animal.sellerName) && (
                                 <div className="pt-2">
-                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Purchase</p>
+                                    <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">Purchase</p>
                                     {animal.purchaseDate && <Row label="Date" value={formatDate(animal.purchaseDate)} />}
                                     {animal.purchasePrice != null && <Row label="Price" value={`${animal.purchasePriceCurrency || 'USD'} ${animal.purchasePrice}`} />}
                                     {animal.purchaseLocation && <Row label="Location" value={animal.purchaseLocation} />}
@@ -938,7 +938,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             )}
                             {(animal.saleDate || animal.salePrice != null || animal.buyerName) && (
                                 <div className="pt-2">
-                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Sale</p>
+                                    <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">Sale</p>
                                     {animal.saleDate && <Row label="Date" value={formatDate(animal.saleDate)} />}
                                     {animal.salePrice != null && <Row label="Price" value={`${animal.saleRecordCurrency || 'USD'} ${animal.salePrice}`} />}
                                     {animal.buyerName && <Row label="Buyer" value={animal.buyerName} />}
@@ -948,26 +948,26 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             <RecordListView label="Milestones" records={animal.milestones} renderItem={(r) => `${r.label} — ${formatDate(r.startDate)}${r.interval && r.intervalUnit ? ` (every ${r.interval} ${r.intervalUnit}${r.interval > 1 ? 's' : ''})` : ''}`} />
                             {Array.isArray(animal.breedingRecords) && animal.breedingRecords.length > 0 && (
                                 <div className="pt-2">
-                                    <p className="text-xs font-bold text-gray-400 uppercase mb-1">Breeding Records</p>
+                                    <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">Breeding Records</p>
                                     {animal.breedingRecords.map((r, i) => (
-                                        <p key={i} className="text-xs text-gray-600">{formatDate(r.date)} — {r.type || r.notes || 'Record'}</p>
+                                        <p key={i} className="text-xs text-gray-600 dark:text-dark-text-secondary">{formatDate(r.date)} — {r.type || r.notes || 'Record'}</p>
                                     ))}
                                 </div>
                             )}
-                            {!hasRecordsData && <p className="text-xs text-gray-400 pt-2">No scheduled or medical records yet.</p>}
+                            {!hasRecordsData && <p className="text-xs text-gray-400 dark:text-dark-text-muted pt-2">No scheduled or medical records yet.</p>}
                         </div>
                     )
                 )}
 
                 {tab === 'Photos' && (
-                    <div className="bg-white rounded-xl p-4 shadow-sm space-y-3">
+                    <div className="bg-white dark:bg-dark-card-bg rounded-xl p-4 shadow-sm space-y-3">
                         {photoError && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{photoError}</div>}
                         {photos.length === 0 ? (
-                            <p className="text-center text-xs text-gray-400 py-8">No photos yet.</p>
+                            <p className="text-center text-xs text-gray-400 dark:text-dark-text-muted py-8">No photos yet.</p>
                         ) : (
                             <div className="grid grid-cols-3 gap-2">
                                 {photos.map((url, i) => (
-                                    <div key={url + i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                    <div key={url + i} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-surface">
                                         <button type="button" onClick={() => setEnlargedImage(url)} className="w-full h-full block">
                                             <AnimalImage src={url} alt={`${displayName} photo ${i + 1}`} iconSize={24} />
                                         </button>
@@ -993,7 +993,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     type="button"
                                     onClick={() => photosFileInputRef.current?.click()}
                                     disabled={uploadingPhotos}
-                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-sm font-semibold text-accent disabled:opacity-60"
+                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-dark-border text-sm font-semibold text-accent disabled:opacity-60"
                                 >
                                     {uploadingPhotos ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                                     {uploadingPhotos ? 'Uploading…' : 'Add Photo'}
@@ -1013,8 +1013,8 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                 <ScrollText size={16} /> Open Pedigree Certificate
                             </button>
                         </div>
-                        <div className="bg-white rounded-xl p-4 shadow-sm">
-                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">Parents</p>
+                        <div className="bg-white dark:bg-dark-card-bg rounded-xl p-4 shadow-sm">
+                            <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-2">Parents</p>
                             <div className="grid grid-cols-2 gap-2 text-sm">
                                 <div className="space-y-1">
                                     <ParentCard label="Sire" parent={parents.sire} onClick={() => parents.sire && navigate(`/animals/${parents.sire.id_public}`)} />
@@ -1044,10 +1044,10 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white rounded-xl p-4 shadow-sm">
-                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">Offspring</p>
+                        <div className="bg-white dark:bg-dark-card-bg rounded-xl p-4 shadow-sm">
+                            <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-2">Offspring</p>
                             {animalLitters.length === 0 && offspringGroups.length === 0 ? (
-                                <p className="text-xs text-gray-400">No offspring recorded.</p>
+                                <p className="text-xs text-gray-400 dark:text-dark-text-muted">No offspring recorded.</p>
                             ) : (
                                 <>
                                     {animalLitters.map((litter) => {
@@ -1062,21 +1062,21 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                         return (
                                             <div key={lid || litter._id} className="mb-3">
                                                 <div className="flex items-center gap-1.5 mb-1">
-                                                    <p className="text-xs text-gray-500">{litter.breedingPairCodeName || lid || 'Untitled Litter'}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-dark-text-muted">{litter.breedingPairCodeName || lid || 'Untitled Litter'}</p>
                                                     {stage && <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${BADGE_STYLES[stage]}`}>{stage}</span>}
-                                                    {hasBirth && <span className="text-xs text-gray-400">{formatDate(litter.birthDate)}</span>}
+                                                    {hasBirth && <span className="text-xs text-gray-400 dark:text-dark-text-muted">{formatDate(litter.birthDate)}</span>}
                                                 </div>
                                                 {items === undefined ? (
-                                                    <p className="text-xs text-gray-300">Loading…</p>
+                                                    <p className="text-xs text-gray-300 dark:text-dark-text-muted">Loading…</p>
                                                 ) : items.length === 0 ? (
-                                                    <p className="text-xs text-gray-400">No offspring linked yet.</p>
+                                                    <p className="text-xs text-gray-400 dark:text-dark-text-muted">No offspring linked yet.</p>
                                                 ) : (
                                                     <div className="flex flex-wrap gap-1.5">
                                                         {items.map((o) => (
                                                             <button
                                                                 key={o.id_public}
                                                                 onClick={() => navigate(`/animals/${o.id_public}`)}
-                                                                className="text-xs px-2 py-1 rounded-full bg-pedigree-female-bg text-accent font-medium"
+                                                                className="text-xs px-2 py-1 rounded-full bg-pedigree-female-bg dark:bg-dark-accent/20 text-accent font-medium"
                                                             >
                                                                 {[o.prefix, o.name, o.suffix].filter(Boolean).join(' ') || 'Unnamed'}
                                                             </button>
@@ -1088,13 +1088,13 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                     })}
                                     {offspringGroups.map((g, i) => (
                                         <div key={`ped-${i}`} className="mb-2">
-                                            <p className="text-xs text-gray-500 mb-1">{formatDate(g.birthDate)}</p>
+                                            <p className="text-xs text-gray-500 dark:text-dark-text-muted mb-1">{formatDate(g.birthDate)}</p>
                                             <div className="flex flex-wrap gap-1.5">
                                                 {g.offspring.map((o) => (
                                                     <button
                                                         key={o.id_public}
                                                         onClick={() => navigate(`/animals/${o.id_public}`)}
-                                                        className="text-xs px-2 py-1 rounded-full bg-pedigree-female-bg text-accent font-medium"
+                                                        className="text-xs px-2 py-1 rounded-full bg-pedigree-female-bg dark:bg-dark-accent/20 text-accent font-medium"
                                                     >
                                                         {[o.prefix, o.name, o.suffix].filter(Boolean).join(' ') || 'Unnamed'}
                                                     </button>
@@ -1150,7 +1150,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                         />
                         <button
                             onClick={(e) => { e.stopPropagation(); handleDownloadImage(enlargedImage); }}
-                            className="bg-accent text-white px-5 py-2 rounded-lg flex items-center gap-2 font-semibold text-sm"
+                            className="bg-accent dark:bg-dark-accent text-white px-5 py-2 rounded-lg flex items-center gap-2 font-semibold text-sm"
                         >
                             <Download size={18} /> Download Image
                         </button>
@@ -1182,16 +1182,16 @@ const AnimalDetail = ({ authToken, userProfile }) => {
 
 const Field = ({ label, children }) => (
     <label className="block">
-        <span className="text-xs font-semibold text-gray-500">{label}</span>
+        <span className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">{label}</span>
         <div className="mt-1">{children}</div>
     </label>
 );
 
 const CollapsibleSection = ({ title, open, onToggle, children }) => (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm overflow-hidden">
         <button type="button" onClick={onToggle} className="w-full flex items-center justify-between p-4">
-            <span className="text-sm font-bold text-gray-800">{title}</span>
-            <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+            <span className="text-sm font-bold text-gray-800 dark:text-dark-text">{title}</span>
+            <ChevronDown size={16} className={`text-gray-400 dark:text-dark-text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
         {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
     </div>
@@ -1203,9 +1203,9 @@ const RecordListView = ({ label, records, renderItem }) => {
     if (list.length === 0) return null;
     return (
         <div>
-            <p className="text-xs font-bold text-gray-400 uppercase mb-1">{label}</p>
+            <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase mb-1">{label}</p>
             <div className="space-y-1">
-                {list.map((r, i) => <p key={r.id || i} className="text-xs text-gray-600">{renderItem(r)}</p>)}
+                {list.map((r, i) => <p key={r.id || i} className="text-xs text-gray-600 dark:text-dark-text-secondary">{renderItem(r)}</p>)}
             </div>
         </div>
     );
@@ -1220,11 +1220,11 @@ const RecordListEditor = ({ label, records, fields, defaults, onChange }) => {
 
     return (
         <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-400 uppercase">{label}</p>
+            <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase">{label}</p>
             {list.map((entry, idx) => (
-                <div key={entry.id || idx} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                <div key={entry.id || idx} className="bg-gray-50 dark:bg-dark-surface rounded-lg p-3 space-y-2">
                     <div className="flex justify-end -mt-1 -mr-1">
-                        <button type="button" onClick={() => remove(idx)} className="p-1 text-gray-400"><X size={14} /></button>
+                        <button type="button" onClick={() => remove(idx)} className="p-1 text-gray-400 dark:text-dark-text-muted"><X size={14} /></button>
                     </div>
                     {fields.map(({ key, label: fLabel, type, options }) => (
                         <Field key={key} label={fLabel}>
@@ -1253,19 +1253,19 @@ const RecordListEditor = ({ label, records, fields, defaults, onChange }) => {
 
 const Row = ({ label, value }) => (
     <div className="flex justify-between gap-3">
-        <span className="text-gray-400">{label}</span>
-        <span className="text-gray-800 font-medium text-right">{value || '—'}</span>
+        <span className="text-gray-400 dark:text-dark-text-muted">{label}</span>
+        <span className="text-gray-800 dark:text-dark-text font-medium text-right">{value || '—'}</span>
     </div>
 );
 
 const ParentCard = ({ label, parent, onClick }) => (
-    <button onClick={onClick} disabled={!parent} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2 text-left disabled:opacity-50">
-        <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+    <button onClick={onClick} disabled={!parent} className="flex items-center gap-2 bg-gray-50 dark:bg-dark-surface rounded-lg p-2 text-left disabled:opacity-50">
+        <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100 dark:bg-dark-surface-hover flex-shrink-0">
             {parent ? <AnimalImage src={parent.imageUrl || parent.photoUrl} alt={parent.name} iconSize={14} /> : null}
         </div>
         <div className="min-w-0">
-            <p className="text-[10px] text-gray-400 uppercase font-bold">{label}</p>
-            <p className="text-xs font-medium text-gray-700 truncate">
+            <p className="text-[10px] text-gray-400 dark:text-dark-text-muted uppercase font-bold">{label}</p>
+            <p className="text-xs font-medium text-gray-700 dark:text-dark-text-secondary truncate">
                 {parent ? [parent.prefix, parent.name, parent.suffix].filter(Boolean).join(' ') : 'Unknown'}
             </p>
         </div>

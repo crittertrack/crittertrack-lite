@@ -6,7 +6,9 @@ module.exports = {
   'primary-dark': '#7fd4e0',
   'accent': '#D27096',
 
-  'dark-bg': '#000000',
+  // dark-bg intentionally deviates from crittertrack-frontend's pure #000000 — Lite shows much
+  // more bare page background (less covered by cards), so true black read as too harsh on device.
+  'dark-bg': '#121212',
   'dark-card-bg': '#2A2830',
   'dark-surface': '#66666b',
   'dark-surface-hover': '#2D2B34',

@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { useAuth } from './hooks/useAuth';
+import { useTheme } from './contexts/ThemeContext';
 import { registerNativePush, initNativePushListeners } from './utils/nativePush';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -20,6 +21,7 @@ import BrandHeader from './components/BrandHeader';
 
 function App() {
   const { authToken, userProfile, loading, login, logout, completeAuth, refreshProfile } = useAuth();
+  const { isDark } = useTheme();
   const location = useLocation();
   const [showRegister, setShowRegister] = useState(false);
 
@@ -27,9 +29,9 @@ function App() {
     if (!Capacitor.isNativePlatform()) return;
     // Reserve space for the status bar instead of letting it overlay the header.
     StatusBar.setOverlaysWebView({ overlay: false });
-    StatusBar.setBackgroundColor({ color: '#D27096' });
+    StatusBar.setBackgroundColor({ color: isDark ? '#000000' : '#D27096' });
     StatusBar.setStyle({ style: Style.Light });
-  }, []);
+  }, [isDark]);
 
   useEffect(() => {
     if (!authToken) return;
@@ -43,7 +45,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-page-bg flex items-center justify-center">
+      <div className="min-h-screen bg-page-bg dark:bg-dark-bg flex items-center justify-center">
         <Loader2 className="animate-spin text-accent" size={28} />
       </div>
     );

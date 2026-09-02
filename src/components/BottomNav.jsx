@@ -10,14 +10,14 @@ const NAV_ITEMS = [
 ];
 
 const BottomNav = () => (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-stretch z-30 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-dark-card-bg border-t border-gray-200 dark:border-dark-border flex items-stretch z-30 pb-[env(safe-area-inset-bottom)]">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
                     `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition ${
-                        isActive ? 'text-accent' : 'text-gray-400'
+                        isActive ? 'text-accent' : 'text-gray-400 dark:text-dark-text-muted'
                     }`
                 }
             >

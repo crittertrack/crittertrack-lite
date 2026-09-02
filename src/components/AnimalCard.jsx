@@ -7,13 +7,13 @@ import { getReproState } from '../utils/reproState';
 
 const STATUS_STYLES = {
     Breeder: 'bg-accent/10 text-accent',
-    Available: 'bg-green-100 text-green-700',
-    Growout: 'bg-amber-100 text-amber-700',
-    Retired: 'bg-gray-200 text-gray-600',
-    Booked: 'bg-info-bg text-info-blue-dark',
-    Deceased: 'bg-gray-300 text-gray-700',
-    Rehomed: 'bg-gray-200 text-gray-600',
-    Pet: 'bg-pedigree-female-bg text-accent',
+    Available: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+    Growout: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+    Retired: 'bg-gray-200 dark:bg-dark-surface-hover text-gray-600 dark:text-dark-text-secondary',
+    Booked: 'bg-info-bg dark:bg-dark-info-blue/30 text-info-blue-dark dark:text-blue-300',
+    Deceased: 'bg-gray-300 dark:bg-dark-surface-hover text-gray-700 dark:text-dark-text-secondary',
+    Rehomed: 'bg-gray-200 dark:bg-dark-surface-hover text-gray-600 dark:text-dark-text-secondary',
+    Pet: 'bg-pedigree-female-bg dark:bg-dark-accent/20 text-accent',
 };
 
 const GenderIcon = ({ gender }) => {
@@ -29,18 +29,18 @@ const AnimalCard = ({ animal, onClick }) => {
     return (
         <button
             onClick={onClick}
-            className="w-full flex items-center gap-3 bg-white rounded-xl p-2.5 shadow-sm text-left active:scale-[0.99] transition"
+            className="w-full flex items-center gap-3 bg-white dark:bg-dark-card-bg rounded-xl p-2.5 shadow-sm text-left active:scale-[0.99] transition"
         >
-            <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+            <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-dark-surface">
                 <AnimalImage src={animal.imageUrl || animal.photoUrl} alt={animal.name} iconSize={20} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 truncate flex items-center gap-1">
+                <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate flex items-center gap-1">
                     <GenderIcon gender={animal.gender} />
                     {[animal.prefix, animal.name || 'Unnamed', animal.suffix].filter(Boolean).join(' ')}
                 </p>
-                <p className="text-xs text-gray-500 truncate">{variety}</p>
-                {age && <p className="text-xs text-gray-400">{formatDateShort(animal.birthDate)} - {age.label || age}</p>}
+                <p className="text-xs text-gray-500 dark:text-dark-text-muted truncate">{variety}</p>
+                {age && <p className="text-xs text-gray-400 dark:text-dark-text-muted">{formatDateShort(animal.birthDate)} - {age.label || age}</p>}
             </div>
             {(reproState || animal.status) && (
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -50,7 +50,7 @@ const AnimalCard = ({ animal, onClick }) => {
                         </span>
                     )}
                     {animal.status && (
-                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[animal.status] || 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[animal.status] || 'bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-dark-text-secondary'}`}>
                             {animal.status}
                         </span>
                     )}

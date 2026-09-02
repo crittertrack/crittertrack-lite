@@ -100,21 +100,21 @@ const isPastOrToday = (dateStr) => {
 const animalName = (a) => [a.prefix, a.name || 'Unnamed', a.suffix].filter(Boolean).join(' ');
 
 const AlertRow = ({ title, subtitle, onView, actionLabel, onAction, busy }) => (
-    <div className="bg-white rounded-xl p-3 shadow-sm flex items-center gap-3">
+    <div className="bg-white dark:bg-dark-card-bg rounded-xl p-3 shadow-sm flex items-center gap-3">
         <button onClick={onView} className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-semibold text-gray-800 truncate">{title}</p>
-            {subtitle && <p className="text-xs text-gray-500 truncate">{subtitle}</p>}
+            <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate">{title}</p>
+            {subtitle && <p className="text-xs text-gray-500 dark:text-dark-text-muted truncate">{subtitle}</p>}
         </button>
         {onAction && (
             <button
                 onClick={onAction}
                 disabled={busy}
-                className="flex items-center gap-1 bg-accent text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50 flex-shrink-0"
+                className="flex items-center gap-1 bg-accent dark:bg-dark-accent text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50 flex-shrink-0"
             >
                 {busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {actionLabel}
             </button>
         )}
-        {!onAction && onView && <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />}
+        {!onAction && onView && <ChevronRight size={16} className="text-gray-300 dark:text-dark-text-muted flex-shrink-0" />}
     </div>
 );
 
@@ -122,11 +122,11 @@ const CategorySection = ({ icon, title, count, children }) => (
     <div className="space-y-2">
         <div className="flex items-center gap-2 px-1">
             {icon}
-            <p className="text-xs font-bold text-gray-400 uppercase">{title}</p>
-            {count > 0 && <span className="text-[10px] font-bold bg-red-100 text-red-600 rounded-full px-1.5 py-0.5">{count}</span>}
+            <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase">{title}</p>
+            {count > 0 && <span className="text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full px-1.5 py-0.5">{count}</span>}
         </div>
         {count === 0 ? (
-            <p className="text-xs text-gray-400 px-1 pb-1">Nothing due right now.</p>
+            <p className="text-xs text-gray-400 dark:text-dark-text-muted px-1 pb-1">Nothing due right now.</p>
         ) : children}
     </div>
 );
@@ -136,10 +136,10 @@ const SupplyAlertRow = ({ supply, onRestock, busy }) => {
     const [qty, setQty] = useState('');
     const isLow = supply.reorderThreshold != null && supply.currentStock <= supply.reorderThreshold;
     return (
-        <div className="bg-white rounded-xl p-3 shadow-sm space-y-2">
+        <div className="bg-white dark:bg-dark-card-bg rounded-xl p-3 shadow-sm space-y-2">
             <div>
-                <p className="text-sm font-semibold text-gray-800 truncate">{supply.name}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate">{supply.name}</p>
+                <p className="text-xs text-gray-500 dark:text-dark-text-muted">
                     {isLow ? `Low stock: ${supply.currentStock}${supply.unit ? ` ${supply.unit}` : ''}` : `Reorder due ${parseLocalDate(supply.nextOrderDate).toLocaleDateString()}`}
                 </p>
             </div>
@@ -150,12 +150,12 @@ const SupplyAlertRow = ({ supply, onRestock, busy }) => {
                     value={qty}
                     onChange={(e) => setQty(e.target.value)}
                     placeholder={`Qty received${supply.unit ? ` (${supply.unit})` : ''}`}
-                    className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-xs"
+                    className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card-bg text-gray-900 dark:text-dark-text text-xs"
                 />
                 <button
                     onClick={() => { onRestock(qty); setQty(''); }}
                     disabled={busy || !qty}
-                    className="flex items-center gap-1 bg-accent text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50 flex-shrink-0"
+                    className="flex items-center gap-1 bg-accent dark:bg-dark-accent text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50 flex-shrink-0"
                 >
                     {busy ? <Loader2 size={13} className="animate-spin" /> : <Package size={13} />} Restock
                 </button>
@@ -410,14 +410,14 @@ const Notifications = ({ authToken }) => {
         + generalTaskAlerts.length;
 
     return (
-        <div className="min-h-screen bg-page-bg pb-[calc(2rem+env(safe-area-inset-bottom))]">
+        <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(2rem+env(safe-area-inset-bottom))]">
             <TopBar title={`Notifications${totalCount > 0 ? ` (${totalCount})` : ''}`} onBack={() => navigate(-1)} />
             <div className="px-4 pt-3 space-y-5">
                 {loading ? (
                     <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
                 ) : (
                     <>
-                        <CategorySection icon={<Utensils size={14} className="text-gray-400" />} title="Feeding" count={feedingAlerts.length + generalFeedingAlerts.length}>
+                        <CategorySection icon={<Utensils size={14} className="text-gray-400 dark:text-dark-text-muted" />} title="Feeding" count={feedingAlerts.length + generalFeedingAlerts.length}>
                             <div className="space-y-2">
                                 {feedingAlerts.map((a) => (
                                     <AlertRow
@@ -443,7 +443,7 @@ const Notifications = ({ authToken }) => {
                             </div>
                         </CategorySection>
 
-                        <CategorySection icon={<ClipboardList size={14} className="text-gray-400" />} title="Care Tasks" count={careTaskAlerts.length + generalCareTaskAlerts.length}>
+                        <CategorySection icon={<ClipboardList size={14} className="text-gray-400 dark:text-dark-text-muted" />} title="Care Tasks" count={careTaskAlerts.length + generalCareTaskAlerts.length}>
                             <div className="space-y-2">
                                 {careTaskAlerts.map((item) => (
                                     <AlertRow
@@ -469,7 +469,7 @@ const Notifications = ({ authToken }) => {
                             </div>
                         </CategorySection>
 
-                        <CategorySection icon={<HeartPulse size={14} className="text-gray-400" />} title="Health" count={healthStatusAlerts.length + quarantineEndedAlerts.length}>
+                        <CategorySection icon={<HeartPulse size={14} className="text-gray-400 dark:text-dark-text-muted" />} title="Health" count={healthStatusAlerts.length + quarantineEndedAlerts.length}>
                             <div className="space-y-2">
                                 {healthStatusAlerts.map((a) => (
                                     <AlertRow
@@ -493,7 +493,7 @@ const Notifications = ({ authToken }) => {
                             </div>
                         </CategorySection>
 
-                        <CategorySection icon={<Home size={14} className="text-gray-400" />} title="Enclosure Care" count={cleaningTaskAlerts.length + supplyAlerts.length + generalEnclosureAlerts.length}>
+                        <CategorySection icon={<Home size={14} className="text-gray-400 dark:text-dark-text-muted" />} title="Enclosure Care" count={cleaningTaskAlerts.length + supplyAlerts.length + generalEnclosureAlerts.length}>
                             <div className="space-y-2">
                                 {cleaningTaskAlerts.map(({ enclosure, task, idx }) => (
                                     <AlertRow
@@ -527,7 +527,7 @@ const Notifications = ({ authToken }) => {
                             </div>
                         </CategorySection>
 
-                        <CategorySection icon={<Baby size={14} className="text-gray-400" />} title="Breeding" count={plannedMatingAlerts.length + dueDateAlerts.length + weaningCheckAlerts.length}>
+                        <CategorySection icon={<Baby size={14} className="text-gray-400 dark:text-dark-text-muted" />} title="Breeding" count={plannedMatingAlerts.length + dueDateAlerts.length + weaningCheckAlerts.length}>
                             <div className="space-y-2">
                                 {plannedMatingAlerts.map((l) => (
                                     <AlertRow
@@ -565,17 +565,17 @@ const Notifications = ({ authToken }) => {
                             </div>
                         </CategorySection>
 
-                        <div className="border-t border-gray-200 pt-4 space-y-2">
+                        <div className="border-t border-gray-200 dark:border-dark-border pt-4 space-y-2">
                             <div className="flex items-center gap-2 px-1">
-                                <Bell size={14} className="text-gray-400" />
-                                <p className="text-xs font-bold text-gray-400 uppercase">Push Notification Preferences</p>
+                                <Bell size={14} className="text-gray-400 dark:text-dark-text-muted" />
+                                <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase">Push Notification Preferences</p>
                             </div>
-                            <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+                            <div className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm divide-y divide-gray-100 dark:divide-dark-border">
                                 {prefsLoading ? (
                                     <div className="flex justify-center py-6"><Loader2 className="animate-spin text-accent" size={20} /></div>
                                 ) : PUSH_CATEGORY_ORDER.map((id) => (
                                     <label key={id} className="flex items-center justify-between gap-3 p-3">
-                                        <span className="text-sm font-medium text-gray-700">{PUSH_CATEGORY_META[id].label}</span>
+                                        <span className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">{PUSH_CATEGORY_META[id].label}</span>
                                         <input
                                             type="checkbox"
                                             checked={prefs[id] !== false}
@@ -585,7 +585,7 @@ const Notifications = ({ authToken }) => {
                                     </label>
                                 ))}
                             </div>
-                            <p className="text-[11px] text-gray-400 px-1">
+                            <p className="text-[11px] text-gray-400 dark:text-dark-text-muted px-1">
                                 Grooming/training schedules, enclosure cleaning tasks, and supplies must be set up on the main CritterTrack site — Lite surfaces alerts and quick actions for whatever's already configured there.
                             </p>
                         </div>
