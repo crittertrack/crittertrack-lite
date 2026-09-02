@@ -18,6 +18,7 @@ import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import BottomNav from './components/BottomNav';
 import BrandHeader from './components/BrandHeader';
+import OfflineBanner from './components/OfflineBanner';
 
 function App() {
   const { authToken, userProfile, loading, login, logout, completeAuth, refreshProfile } = useAuth();
@@ -45,23 +46,31 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-page-bg dark:bg-dark-bg flex items-center justify-center">
-        <Loader2 className="animate-spin text-accent" size={28} />
-      </div>
+      <>
+        <OfflineBanner />
+        <div className="min-h-screen bg-page-bg dark:bg-dark-bg flex items-center justify-center">
+          <Loader2 className="animate-spin text-accent" size={28} />
+        </div>
+      </>
     );
   }
 
   if (!authToken) {
-    if (showRegister) {
-      return <Register onRegistered={completeAuth} onBack={() => setShowRegister(false)} />;
-    }
-    return <Login onLogin={login} onShowRegister={() => setShowRegister(true)} />;
+    return (
+      <>
+        <OfflineBanner />
+        {showRegister
+          ? <Register onRegistered={completeAuth} onBack={() => setShowRegister(false)} />
+          : <Login onLogin={login} onShowRegister={() => setShowRegister(true)} />}
+      </>
+    );
   }
 
   const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && location.pathname !== '/profile' && location.pathname !== '/notifications';
 
   return (
     <div className="App">
+      <OfflineBanner />
       {showNav && <BrandHeader userProfile={userProfile} onLogout={logout} authToken={authToken} />}
       <Routes>
         <Route path="/" element={<Navigate to="/animals" replace />} />
