@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
@@ -6,6 +6,8 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { useAuth } from './hooks/useAuth';
 import { useTheme } from './contexts/ThemeContext';
 import { registerNativePush, initNativePushListeners } from './utils/nativePush';
+import { prefetchAppData } from './utils/prefetchOfflineData';
+import { warmImageCache } from './utils/offlineImageCache';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MyAnimals from './pages/MyAnimals';
@@ -19,6 +21,7 @@ import Notifications from './pages/Notifications';
 import BottomNav from './components/BottomNav';
 import BrandHeader from './components/BrandHeader';
 import OfflineBanner from './components/OfflineBanner';
+import SyncFailureBanner from './components/SyncFailureBanner';
 
 function App() {
   const { authToken, userProfile, loading, login, logout, completeAuth, refreshProfile } = useAuth();
@@ -43,6 +46,25 @@ function App() {
     })();
     return () => cleanup();
   }, [authToken]);
+
+  // Load all the core data (and photos) into the offline cache as soon as the user is signed
+  // in — up front, not lazily whenever a tab happens to get opened — so offline mode works
+  // immediately even for tabs never visited yet. Re-runs on reconnect so the cache stays fresh.
+  const wasOnlineRef = useRef(true);
+  useEffect(() => {
+    if (!authToken) return;
+    prefetchAppData();
+    const onNetworkStatus = (e) => {
+      if (e.detail.online && !wasOnlineRef.current) prefetchAppData();
+      wasOnlineRef.current = e.detail.online;
+    };
+    window.addEventListener('api-network-status', onNetworkStatus);
+    return () => window.removeEventListener('api-network-status', onNetworkStatus);
+  }, [authToken]);
+
+  useEffect(() => {
+    if (userProfile?.profileImage) warmImageCache(userProfile.profileImage);
+  }, [userProfile?.profileImage]);
 
   if (loading) {
     return (
@@ -85,6 +107,7 @@ function App() {
         <Route path="*" element={<Navigate to="/animals" replace />} />
       </Routes>
       {showNav && <BottomNav />}
+      <SyncFailureBanner />
     </div>
   );
 }

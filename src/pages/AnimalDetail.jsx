@@ -188,8 +188,12 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                 delete payload.isNursing;
             }
             const response = await apiClient.put(`/animals/${id}`, payload);
-            setAnimal(response.data);
-            setForm(response.data);
+            // Merge rather than replace: when a write is queued offline, apiClient's synthetic
+            // response only echoes back the sent payload, not a full server-computed document —
+            // merging keeps every other field intact either way (a real server response's fields
+            // simply win over the local `payload` spread, since it's spread last).
+            setAnimal((a) => ({ ...a, ...payload, ...response.data }));
+            setForm((f) => ({ ...f, ...payload, ...response.data }));
             setEditing(false);
             setReproOverride(false);
         } catch (error) {
@@ -225,10 +229,11 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     const [pickerRole, setPickerRole] = useState(null);
     const handleAssignParent = async (role, selectedAnimal) => {
         const key = role === 'sire' ? 'sireId_public' : 'damId_public';
+        const fields = { [key]: selectedAnimal ? selectedAnimal.id_public : null };
         try {
-            const response = await apiClient.put(`/animals/${id}`, { [key]: selectedAnimal ? selectedAnimal.id_public : null });
-            setAnimal(response.data);
-            setForm(response.data);
+            const response = await apiClient.put(`/animals/${id}`, fields);
+            setAnimal((a) => ({ ...a, ...fields, ...response.data }));
+            setForm((f) => ({ ...f, ...fields, ...response.data }));
             setParents((p) => ({ ...p, [role]: selectedAnimal || null }));
         } catch (error) {
             console.error(`Failed to update ${role}:`, error);
@@ -248,8 +253,8 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         const [primary, ...rest] = newPhotos;
         const payload = { imageUrl: primary || null, photoUrl: primary || null, extraImages: rest };
         const response = await apiClient.put(`/animals/${id}`, payload);
-        setAnimal(response.data);
-        setForm(response.data);
+        setAnimal((a) => ({ ...a, ...payload, ...response.data }));
+        setForm((f) => ({ ...f, ...payload, ...response.data }));
     };
 
     const handleAddPhotos = async (e) => {

@@ -1,19 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Utensils, ClipboardList, HeartPulse, Baby, Check, ChevronRight, Bell, Home, Package } from 'lucide-react';
+import { Loader2, Utensils, ClipboardList, HeartPulse, Baby, Check, ChevronRight, Home, Package } from 'lucide-react';
 import TopBar from '../components/TopBar';
-
-// Only the animal/management categories — messages/requests/system are the general
-// notification system (NotificationPanel on the main site) and out of scope here.
-const PUSH_CATEGORY_META = {
-    feeding: { label: 'Feeding reminders' },
-    careTasks: { label: 'Grooming, training & custom care' },
-    enclosureCare: { label: 'Enclosure & supplies' },
-    health: { label: 'Health & medical alerts' },
-    breeding: { label: 'Litters & mating reminders' },
-};
-const PUSH_CATEGORY_ORDER = ['feeding', 'careTasks', 'enclosureCare', 'health', 'breeding'];
 
 // Mirrors crittertrack-frontend's utils/scheduleFieldDefs.js — same 18 dedicated Animal-schema
 // fields, kept inline here since Lite has no editing UI for these yet (see AnimalDetail.jsx),
@@ -170,27 +159,29 @@ const Notifications = ({ authToken }) => {
     const [generalCareTasks, setGeneralCareTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busyKey, setBusyKey] = useState(null);
-    const [prefs, setPrefs] = useState({});
-    const [prefsLoading, setPrefsLoading] = useState(true);
+
 
     const fetchAll = useCallback(async () => {
         setLoading(true);
         try {
-            const [animalsRes, littersRes, enclosuresRes, suppliesRes, generalTasksRes] = await Promise.all([
+            // allSettled (not all): while offline, one endpoint having no cached data yet
+            // shouldn't blank out the others that DO have a valid cached response.
+            const [animalsRes, littersRes, enclosuresRes, suppliesRes, generalTasksRes] = await Promise.allSettled([
                 apiClient.get('/animals'),
                 apiClient.get('/litters'),
                 apiClient.get('/enclosures'),
                 apiClient.get('/supplies'),
                 apiClient.get('/users/general-tasks'),
             ]);
-            const animalData = Array.isArray(animalsRes.data) ? animalsRes.data : [];
+            const dataOf = (r) => (r.status === 'fulfilled' ? r.value.data : undefined);
+            const animalData = Array.isArray(dataOf(animalsRes)) ? dataOf(animalsRes) : [];
             // No isOwned filter — matches NotificationsHub.jsx exactly: every non-archived,
             // non-view-only animal regardless of ownership.
             setAnimals(animalData.filter((a) => !a.isViewOnly && !a.archived));
-            setLitters(Array.isArray(littersRes.data) ? littersRes.data : []);
-            setEnclosures(Array.isArray(enclosuresRes.data) ? enclosuresRes.data : []);
-            setSupplies(Array.isArray(suppliesRes.data) ? suppliesRes.data : []);
-            setGeneralCareTasks(Array.isArray(generalTasksRes.data?.generalCareTasks) ? generalTasksRes.data.generalCareTasks : []);
+            if (Array.isArray(dataOf(littersRes))) setLitters(dataOf(littersRes));
+            if (Array.isArray(dataOf(enclosuresRes))) setEnclosures(dataOf(enclosuresRes));
+            if (Array.isArray(dataOf(suppliesRes))) setSupplies(dataOf(suppliesRes));
+            if (Array.isArray(dataOf(generalTasksRes)?.generalCareTasks)) setGeneralCareTasks(dataOf(generalTasksRes).generalCareTasks);
         } catch (error) {
             console.error('Failed to fetch notifications data:', error);
         } finally {
@@ -203,23 +194,13 @@ const Notifications = ({ authToken }) => {
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
-    useEffect(() => {
-        apiClient.get('/push/preferences')
-            .then((res) => setPrefs(res.data?.preferences || {}))
-            .catch(() => setPrefs({}))
-            .finally(() => setPrefsLoading(false));
-    }, [authToken]);
-
-    const togglePref = async (categoryId) => {
-        const next = prefs[categoryId] === false ? true : false;
-        setPrefs((p) => ({ ...p, [categoryId]: next }));
-        try {
-            await apiClient.put('/push/preferences', { [categoryId]: next });
-        } catch (error) {
-            console.error('Failed to update push preference:', error);
-            setPrefs((p) => ({ ...p, [categoryId]: !next }));
-        }
-    };
+    // Quick actions below patch local state directly with the same fields just sent to the
+    // server, instead of calling fetchAll() — a refetch while offline would just re-serve the
+    // stale pre-write cached list and make the action look like it silently did nothing.
+    const patchAnimal = (id, fields) => setAnimals((prev) => prev.map((a) => (a.id_public === id ? { ...a, ...fields } : a)));
+    const patchLitter = (id, fields) => setLitters((prev) => prev.map((l) => (l._id === id ? { ...l, ...fields } : l)));
+    const patchEnclosure = (id, fields) => setEnclosures((prev) => prev.map((e) => (e._id === id ? { ...e, ...fields } : e)));
+    const patchSupply = (id, fields) => setSupplies((prev) => prev.map((s) => (s._id === id ? { ...s, ...fields } : s)));
 
     // ---- Feeding ----
     const feedingAlerts = useMemo(() => (
@@ -229,8 +210,9 @@ const Notifications = ({ authToken }) => {
     const markFed = async (animal) => {
         setBusyKey(`feed-${animal.id_public}`);
         try {
-            await apiClient.put(`/animals/${animal.id_public}`, { lastFedDate: new Date().toISOString() });
-            fetchAll();
+            const fields = { lastFedDate: new Date().toISOString() };
+            await apiClient.put(`/animals/${animal.id_public}`, fields);
+            patchAnimal(animal.id_public, fields);
         } finally { setBusyKey(null); }
     };
 
@@ -255,7 +237,7 @@ const Notifications = ({ authToken }) => {
         try {
             const nextTasks = (animal.animalCareTasks || []).map((t, i) => i === idx ? { ...t, lastDoneDate: new Date().toISOString() } : t);
             await apiClient.put(`/animals/${animal.id_public}`, { animalCareTasks: nextTasks });
-            fetchAll();
+            patchAnimal(animal.id_public, { animalCareTasks: nextTasks });
         } finally { setBusyKey(null); }
     };
     const markScheduleDone = async (animal, key) => {
@@ -264,7 +246,7 @@ const Notifications = ({ authToken }) => {
         try {
             const field = { ...(animal[key] || {}), lastDoneDate: new Date().toISOString(), lastSkipped: false };
             await apiClient.put(`/animals/${animal.id_public}`, { [key]: field });
-            fetchAll();
+            patchAnimal(animal.id_public, { [key]: field });
         } finally { setBusyKey(null); }
     };
 
@@ -285,7 +267,7 @@ const Notifications = ({ authToken }) => {
         try {
             const nextTasks = generalCareTasks.map((t) => t.id === task.id ? { ...t, lastDoneDate: new Date().toISOString(), lastSkipped: false } : t);
             await apiClient.put('/users/general-tasks', { generalCareTasks: nextTasks });
-            fetchAll();
+            setGeneralCareTasks(nextTasks);
         } finally { setBusyKey(null); }
     };
 
@@ -300,8 +282,9 @@ const Notifications = ({ authToken }) => {
     const clearQuarantine = async (animal) => {
         setBusyKey(`quarantine-${animal.id_public}`);
         try {
-            await apiClient.put(`/animals/${animal.id_public}`, { quarantineDetails: { ...animal.quarantineDetails, status: 'None' } });
-            fetchAll();
+            const fields = { quarantineDetails: { ...animal.quarantineDetails, status: 'None' } };
+            await apiClient.put(`/animals/${animal.id_public}`, fields);
+            patchAnimal(animal.id_public, fields);
         } finally { setBusyKey(null); }
     };
 
@@ -329,7 +312,7 @@ const Notifications = ({ authToken }) => {
         try {
             const nextTasks = (enclosure.cleaningTasks || []).map((t, i) => i === idx ? { ...t, lastDoneDate: new Date().toISOString() } : t);
             await apiClient.patch(`/enclosures/${enclosure._id}`, { cleaningTasks: nextTasks });
-            fetchAll();
+            patchEnclosure(enclosure._id, { cleaningTasks: nextTasks });
         } finally { setBusyKey(null); }
     };
     const restockSupply = async (supply, qty) => {
@@ -346,7 +329,7 @@ const Notifications = ({ authToken }) => {
                 patch.nextOrderDate = base.toISOString().split('T')[0];
             }
             await apiClient.patch(`/supplies/${supply._id}`, patch);
-            fetchAll();
+            patchSupply(supply._id, patch);
         } finally { setBusyKey(null); }
     };
 
@@ -369,32 +352,35 @@ const Notifications = ({ authToken }) => {
     const markMated = async (litter) => {
         setBusyKey(`mate-${litter._id}`);
         try {
-            await apiClient.put(`/litters/${litter._id}`, { matingDate: new Date().toISOString(), isPlanned: false });
-            fetchAll();
+            const fields = { matingDate: new Date().toISOString(), isPlanned: false };
+            await apiClient.put(`/litters/${litter._id}`, fields);
+            patchLitter(litter._id, fields);
         } finally { setBusyKey(null); }
     };
     const markBornToday = async (litter) => {
         setBusyKey(`born-${litter._id}`);
         try {
+            const fields = { birthDate: new Date().toISOString() };
             await Promise.all([
-                apiClient.put(`/litters/${litter._id}`, { birthDate: new Date().toISOString() }),
+                apiClient.put(`/litters/${litter._id}`, fields),
                 litter.damId_public
                     ? apiClient.put(`/animals/${litter.damId_public}`, { isPregnant: false, isNursing: true })
                     : Promise.resolve(),
             ]);
-            fetchAll();
+            patchLitter(litter._id, fields);
         } finally { setBusyKey(null); }
     };
     const markWeanedToday = async (litter) => {
         setBusyKey(`wean-${litter._id}`);
         try {
+            const fields = { weaningDate: new Date().toISOString(), weaningConfirmed: true };
             await Promise.all([
-                apiClient.put(`/litters/${litter._id}`, { weaningDate: new Date().toISOString(), weaningConfirmed: true }),
+                apiClient.put(`/litters/${litter._id}`, fields),
                 litter.damId_public
                     ? apiClient.put(`/animals/${litter.damId_public}`, { isNursing: false })
                     : Promise.resolve(),
             ]);
-            fetchAll();
+            patchLitter(litter._id, fields);
         } finally { setBusyKey(null); }
     };
 
@@ -561,31 +547,6 @@ const Notifications = ({ authToken }) => {
                                 ))}
                             </div>
                         </CategorySection>
-
-                        <div className="border-t border-gray-200 dark:border-dark-border pt-4 space-y-2">
-                            <div className="flex items-center gap-2 px-1">
-                                <Bell size={14} className="text-gray-400 dark:text-dark-text-muted" />
-                                <p className="text-xs font-bold text-gray-400 dark:text-dark-text-muted uppercase">Push Notification Preferences</p>
-                            </div>
-                            <div className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm divide-y divide-gray-100 dark:divide-dark-border">
-                                {prefsLoading ? (
-                                    <div className="flex justify-center py-6"><Loader2 className="animate-spin text-accent" size={20} /></div>
-                                ) : PUSH_CATEGORY_ORDER.map((id) => (
-                                    <label key={id} className="flex items-center justify-between gap-3 p-3">
-                                        <span className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">{PUSH_CATEGORY_META[id].label}</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={prefs[id] !== false}
-                                            onChange={() => togglePref(id)}
-                                            className="w-5 h-5 accent-accent flex-shrink-0"
-                                        />
-                                    </label>
-                                ))}
-                            </div>
-                            <p className="text-[11px] text-gray-400 dark:text-dark-text-muted px-1">
-                                Grooming/training schedules, enclosure cleaning tasks, and supplies must be set up on the main CritterTrack site — Lite surfaces alerts and quick actions for whatever's already configured there.
-                            </p>
-                        </div>
                     </>
                 )}
             </div>

@@ -50,7 +50,10 @@ const ParentMini = ({ label, animal, navigate }) => (
     </button>
 );
 
-const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring }) => {
+// Memoized: filtering/search re-renders Breeding on every keystroke; its props here are all
+// stable (litter is a stable ref unless patched, onUpdated/onAddOffspring are useCallback/setState),
+// so memo lets unrelated cards skip re-rendering entirely, keeping the search box responsive.
+const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAddOffspring }) => {
     const navigate = useNavigate();
     const [savingBirthDate, setSavingBirthDate] = useState(false);
     const [birthDateInput, setBirthDateInput] = useState(litter.birthDate ? litter.birthDate.slice(0, 10) : '');
@@ -104,21 +107,25 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
     const markMated = async () => {
         setBusy(true);
         try {
-            await apiClient.put(`/litters/${litter._id}`, { matingDate: new Date().toISOString(), isPlanned: false });
-            onUpdated();
+            const fields = { matingDate: new Date().toISOString(), isPlanned: false };
+            await apiClient.put(`/litters/${litter._id}`, fields);
+            // Patches local state directly instead of refetching — a refetch while offline would
+            // just re-serve the pre-write cached list and make this action look like it did nothing.
+            onUpdated(litter._id, fields);
         } finally { setBusy(false); }
     };
 
     const markPregnant = async () => {
         setBusy(true);
         try {
+            const fields = { pregnancyDate: new Date().toISOString() };
             await Promise.all([
-                apiClient.put(`/litters/${litter._id}`, { pregnancyDate: new Date().toISOString() }),
+                apiClient.put(`/litters/${litter._id}`, fields),
                 litter.damId_public
                     ? apiClient.put(`/animals/${litter.damId_public}`, { isPregnant: true, isInMating: false })
                     : Promise.resolve(),
             ]);
-            onUpdated();
+            onUpdated(litter._id, fields);
         } finally { setBusy(false); }
     };
 
@@ -126,27 +133,29 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
         setBusy(true);
         setSavingBirthDate(true);
         try {
+            const fields = { birthDate: dateStr };
             await Promise.all([
-                apiClient.put(`/litters/${litter._id}`, { birthDate: dateStr }),
+                apiClient.put(`/litters/${litter._id}`, fields),
                 litter.damId_public
                     ? apiClient.put(`/animals/${litter.damId_public}`, { isPregnant: false, isNursing: true })
                     : Promise.resolve(),
             ]);
             setShowBirthInput(false);
-            onUpdated();
+            onUpdated(litter._id, fields);
         } finally { setBusy(false); setSavingBirthDate(false); }
     };
 
     const markWeaned = async () => {
         setBusy(true);
         try {
+            const fields = { weaningDate: new Date().toISOString(), weaningConfirmed: true };
             await Promise.all([
-                apiClient.put(`/litters/${litter._id}`, { weaningDate: new Date().toISOString(), weaningConfirmed: true }),
+                apiClient.put(`/litters/${litter._id}`, fields),
                 litter.damId_public
                     ? apiClient.put(`/animals/${litter.damId_public}`, { isNursing: false })
                     : Promise.resolve(),
             ]);
-            onUpdated();
+            onUpdated(litter._id, fields);
         } finally { setBusy(false); }
     };
 
@@ -298,7 +307,7 @@ const LitterCard = ({ litter, authToken, userProfile, onUpdated, onAddOffspring 
             )}
         </div>
     );
-};
+});
 
 // Plan a mating between two owned animals — mirrors crittertrack-frontend's handleSubmitMating
 // payload shape. Litters normally start out isPlanned:true; if a Birth Date is supplied here
@@ -439,6 +448,13 @@ const Breeding = ({ authToken, userProfile }) => {
     const [showAddMating, setShowAddMating] = useState(false);
     const [stageFilter, setStageFilter] = useState('All');
     const [search, setSearch] = useState('');
+    // See MyAnimals.jsx's identical debounce comment — avoids re-filtering/re-rendering the
+    // whole litter list (and remounting its images) on every single keystroke.
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 200);
+        return () => clearTimeout(t);
+    }, [search]);
 
     const fetchLitters = useCallback(async () => {
         setLoading(true);
@@ -454,8 +470,14 @@ const Breeding = ({ authToken, userProfile }) => {
 
     useEffect(() => { fetchLitters(); }, [fetchLitters]);
 
+    // Used by LitterCard's mark-as-* actions to reflect a write immediately in local state,
+    // instead of a full refetch (which while offline would just re-serve the stale cached list).
+    const patchLitter = useCallback((id, fields) => {
+        setLitters((prev) => prev.map((l) => (l._id === id ? { ...l, ...fields } : l)));
+    }, []);
+
     const filteredLitters = useMemo(() => {
-        const q = search.trim().toLowerCase();
+        const q = debouncedSearch.trim().toLowerCase();
         return litters
             .filter((l) => stageFilter === 'All' || getLitterStage(l) === stageFilter)
             .filter((l) => {
@@ -464,7 +486,7 @@ const Breeding = ({ authToken, userProfile }) => {
                     .filter(Boolean).join(' ').toLowerCase();
                 return haystack.includes(q);
             });
-    }, [litters, stageFilter, search]);
+    }, [litters, stageFilter, debouncedSearch]);
 
     const handleOffspringCreated = async (newAnimal) => {
         const litter = addOffspringLitter;
@@ -530,7 +552,7 @@ const Breeding = ({ authToken, userProfile }) => {
                             litter={litter}
                             authToken={authToken}
                             userProfile={userProfile}
-                            onUpdated={fetchLitters}
+                            onUpdated={patchLitter}
                             onAddOffspring={setAddOffspringLitter}
                         />
                     ))

@@ -49,6 +49,15 @@ const MyAnimals = ({ authToken }) => {
     const [sortBy, setSortBy] = useState(storedFilters.sortBy);
     const [showAdd, setShowAdd] = useState(false);
 
+    // The input itself always updates instantly on `search`; the actual filtering (which
+    // mounts/unmounts a whole page of cards+images and was the source of visible typing lag)
+    // only runs against `debouncedSearch`, a beat after the user stops typing.
+    const [debouncedSearch, setDebouncedSearch] = useState(storedFilters.search);
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 200);
+        return () => clearTimeout(t);
+    }, [search]);
+
     useEffect(() => {
         localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify({ search, speciesFilter, genderFilter, statusFilter, sortBy }));
     }, [search, speciesFilter, genderFilter, statusFilter, sortBy]);
@@ -86,6 +95,10 @@ const MyAnimals = ({ authToken }) => {
 
     useEffect(() => { fetchAnimals(); }, [fetchAnimals]);
 
+    // Stable reference so React.memo on AnimalCard actually prevents re-rendering unrelated
+    // cards on every search/filter keystroke (a new inline closure per render would defeat memo).
+    const handleOpenAnimal = useCallback((id) => navigate(`/animals/${id}`), [navigate]);
+
     const speciesOptions = useMemo(() => {
         const unique = Array.from(new Set(animals.map((a) => a.species).filter(Boolean))).sort();
         return ['All Species', ...unique];
@@ -106,8 +119,8 @@ const MyAnimals = ({ authToken }) => {
         if (speciesFilter !== 'All Species') list = list.filter((a) => a.species === speciesFilter);
         if (genderFilter !== 'All Genders') list = list.filter((a) => a.gender === genderFilter);
         if (statusFilter !== 'All Statuses') list = list.filter((a) => a.status === statusFilter);
-        if (search.trim()) {
-            const q = search.trim().toLowerCase();
+        if (debouncedSearch.trim()) {
+            const q = debouncedSearch.trim().toLowerCase();
             list = list.filter((a) =>
                 [a.name, a.prefix, a.suffix, a.species, a.id_public].filter(Boolean).some((v) => v.toLowerCase().includes(q))
             );
@@ -128,7 +141,7 @@ const MyAnimals = ({ authToken }) => {
             return sortBy === 'age-asc' ? bTime - aTime : aTime - bTime;
         });
         return sorted;
-    }, [animals, ownedMode, speciesFilter, genderFilter, statusFilter, sortBy, search, collectionKey, animalMap]);
+    }, [animals, ownedMode, speciesFilter, genderFilter, statusFilter, sortBy, debouncedSearch, collectionKey, animalMap]);
 
     return (
         <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
@@ -222,7 +235,7 @@ const MyAnimals = ({ authToken }) => {
                 ) : (
                     <div className="space-y-2">
                         {filtered.map((animal) => (
-                            <AnimalCard key={animal.id_public} animal={animal} onClick={() => navigate(`/animals/${animal.id_public}`)} />
+                            <AnimalCard key={animal.id_public} animal={animal} onOpen={handleOpenAnimal} />
                         ))}
                     </div>
                 )}

@@ -3,6 +3,7 @@ import apiClient from '../utils/apiClient';
 import { Loader2, Home, Pencil, Check, X, Plus } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import EnclosureDetailModal from '../components/EnclosureDetailModal';
+import AnimalImage from '../components/shared/AnimalImage';
 
 const PURPOSE_OPTIONS = [
     { value: '', label: 'General' },
@@ -33,14 +34,20 @@ const Enclosures = ({ authToken }) => {
     const fetchAll = useCallback(async () => {
         setLoading(true);
         try {
-            const [enclosuresRes, animalsRes] = await Promise.all([
+            // allSettled (not all): while offline, one endpoint having no cached data yet
+            // shouldn't blank out the other one that DOES have a valid cached response.
+            const [enclosuresResult, animalsResult] = await Promise.allSettled([
                 apiClient.get('/enclosures'),
                 apiClient.get('/animals'),
             ]);
-            setEnclosures(Array.isArray(enclosuresRes.data) ? enclosuresRes.data : []);
-            // isViewOnly = transferred-in animal the user doesn't actually own (archived is
-            // already excluded server-side).
-            setAnimals((Array.isArray(animalsRes.data) ? animalsRes.data : []).filter((a) => !a.isViewOnly));
+            if (enclosuresResult.status === 'fulfilled') {
+                setEnclosures(Array.isArray(enclosuresResult.value.data) ? enclosuresResult.value.data : []);
+            }
+            if (animalsResult.status === 'fulfilled') {
+                // isViewOnly = transferred-in animal the user doesn't actually own (archived is
+                // already excluded server-side).
+                setAnimals((Array.isArray(animalsResult.value.data) ? animalsResult.value.data : []).filter((a) => !a.isViewOnly));
+            }
         } catch (error) {
             console.error('Failed to fetch enclosures:', error);
         } finally {
@@ -63,12 +70,15 @@ const Enclosures = ({ authToken }) => {
 
     const saveEdit = async (enc) => {
         try {
-            await apiClient.put(`/enclosures/${enc._id}`, {
+            const fields = {
                 name: editForm.name,
                 capacity: editForm.capacity === '' ? null : Number(editForm.capacity),
-            });
+            };
+            await apiClient.put(`/enclosures/${enc._id}`, fields);
+            // Patches local state directly instead of refetching — a refetch while offline
+            // would just re-serve the stale pre-write cached list.
+            setEnclosures((prev) => prev.map((e) => (e._id === enc._id ? { ...e, ...fields } : e)));
             setEditingId(null);
-            fetchAll();
         } catch (error) {
             console.error('Failed to update enclosure:', error);
         }
@@ -168,7 +178,7 @@ const Enclosures = ({ authToken }) => {
                             ) : (
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-dark-surface flex-shrink-0 flex items-center justify-center text-gray-400 dark:text-dark-text-muted">
-                                        {enc.imageUrl ? <img src={enc.imageUrl} alt={enc.name} className="w-full h-full object-cover" /> : <Home size={20} />}
+                                        <AnimalImage src={enc.imageUrl} alt={enc.name} iconSize={20} FallbackIcon={Home} />
                                     </div>
                                     <button onClick={() => setSelected(enc)} className="flex-1 min-w-0 text-left">
                                         <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate">{enc.name}</p>
@@ -192,7 +202,9 @@ const Enclosures = ({ authToken }) => {
                     enclosure={selected}
                     authToken={authToken}
                     onClose={() => setSelected(null)}
-                    onChanged={fetchAll}
+                    onAnimalEnclosureChanged={(animalId, enclosureId) => {
+                        setAnimals((prev) => prev.map((a) => (a.id_public === animalId ? { ...a, enclosureId } : a)));
+                    }}
                 />
             )}
         </div>

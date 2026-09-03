@@ -4,7 +4,7 @@ import { X, Loader2, Plus, Trash2, Home } from 'lucide-react';
 import AnimalImage from './shared/AnimalImage';
 
 // Quick assign/remove animals for a single enclosure — opened from the Enclosures overview.
-const EnclosureDetailModal = ({ enclosure, authToken, onClose, onChanged }) => {
+const EnclosureDetailModal = ({ enclosure, authToken, onClose, onAnimalEnclosureChanged }) => {
     const [allAnimals, setAllAnimals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showPicker, setShowPicker] = useState(false);
@@ -31,12 +31,15 @@ const EnclosureDetailModal = ({ enclosure, authToken, onClose, onChanged }) => {
             .filter((a) => !q || [a.name, a.prefix, a.suffix, a.species].filter(Boolean).some((v) => v.toLowerCase().includes(q)));
     }, [allAnimals, enclosure._id, search]);
 
+    // Patches local state directly (and tells the parent Enclosures page to do the same to its
+    // own animals list) instead of refetching — a refetch while offline would just re-serve the
+    // stale pre-write cached list and make the assign/remove look like it didn't work.
     const assign = async (animal) => {
         setBusyId(animal.id_public);
         try {
             await apiClient.put(`/animals/${animal.id_public}`, { enclosureId: enclosure._id });
-            await fetchAnimals();
-            onChanged && onChanged();
+            setAllAnimals((prev) => prev.map((a) => (a.id_public === animal.id_public ? { ...a, enclosureId: enclosure._id } : a)));
+            onAnimalEnclosureChanged && onAnimalEnclosureChanged(animal.id_public, enclosure._id);
         } finally { setBusyId(null); }
     };
 
@@ -44,8 +47,8 @@ const EnclosureDetailModal = ({ enclosure, authToken, onClose, onChanged }) => {
         setBusyId(animal.id_public);
         try {
             await apiClient.put(`/animals/${animal.id_public}`, { enclosureId: null });
-            await fetchAnimals();
-            onChanged && onChanged();
+            setAllAnimals((prev) => prev.map((a) => (a.id_public === animal.id_public ? { ...a, enclosureId: null } : a)));
+            onAnimalEnclosureChanged && onAnimalEnclosureChanged(animal.id_public, null);
         } finally { setBusyId(null); }
     };
 

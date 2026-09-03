@@ -5,6 +5,10 @@ import { Loader2, User, Camera, Check, KeyRound, Eye, EyeOff, LogOut, Bell, Sun,
 import TopBar from '../components/TopBar';
 import { useTheme } from '../contexts/ThemeContext';
 
+// Messages/requests-transfers/system notifications have no corresponding feature in Lite yet,
+// so those categories are hidden here even though the shared backend endpoint returns all 8.
+const LITE_PUSH_CATEGORIES = new Set(['breeding', 'feeding', 'enclosureCare', 'careTasks', 'health']);
+
 // Mirrors the relevant parts of crittertrack-frontend's ProfileEditForm (basic info, privacy
 // toggles, profile image, change password) — no bio/social links/breeder-info page yet.
 const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
@@ -35,7 +39,7 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
     useEffect(() => {
         apiClient.get('/push/preferences')
             .then((r) => {
-                setPushCategories(r.data?.categories || []);
+                setPushCategories((r.data?.categories || []).filter((cat) => LITE_PUSH_CATEGORIES.has(cat.id)));
                 setPushPreferences(r.data?.preferences || {});
             })
             .catch(() => {});

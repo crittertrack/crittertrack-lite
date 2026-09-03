@@ -22,13 +22,17 @@ const GenderIcon = ({ gender }) => {
     return null;
 };
 
-const AnimalCard = ({ animal, onClick }) => {
+// Memoized: MyAnimals/Collections re-render this list on every search keystroke, and without
+// memoization every visible card (each doing date-math/variety/repro-state work) would
+// re-render on every keystroke even though almost none of their underlying data changed,
+// which was the source of visible input lag while typing in the search box.
+const AnimalCard = React.memo(({ animal, onOpen }) => {
     const age = calculateAgeDetailed(animal.birthDate);
     const variety = getVariety(animal) || animal.species;
     const reproState = getReproState(animal);
     return (
         <button
-            onClick={onClick}
+            onClick={() => onOpen(animal.id_public)}
             className="w-full flex items-center gap-3 bg-white dark:bg-dark-card-bg rounded-xl p-2.5 shadow-sm text-left active:scale-[0.99] transition"
         >
             <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-dark-surface">
@@ -58,6 +62,6 @@ const AnimalCard = ({ animal, onClick }) => {
             )}
         </button>
     );
-};
+});
 
 export default AnimalCard;

@@ -4,6 +4,7 @@ import { LogOut, User, Search, Bell } from 'lucide-react';
 import logo from '../assets/lite-logo.png';
 import { useAlertCount } from '../hooks/useAlertCount';
 import ThemeToggle from './ThemeToggle';
+import AnimalImage from './shared/AnimalImage';
 
 // App-wide brand bar shown above the per-page TopBar on all main tab screens.
 const BrandHeader = ({ userProfile, onLogout, authToken }) => {
@@ -33,7 +34,9 @@ const BrandHeader = ({ userProfile, onLogout, authToken }) => {
                 </button>
                 <button onClick={() => navigate('/profile')} className="flex-shrink-0" title="Profile">
                     {userProfile?.profileImage ? (
-                        <img src={userProfile.profileImage} alt="Profile" className="w-9 h-9 rounded-full object-cover" />
+                        <div className="w-9 h-9 rounded-full overflow-hidden">
+                            <AnimalImage src={userProfile.profileImage} alt="Profile" iconSize={18} FallbackIcon={User} />
+                        </div>
                     ) : (
                         <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-dark-surface flex items-center justify-center">
                             <User size={18} className="text-gray-400 dark:text-dark-text-muted" />
