@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import apiClient from '../utils/apiClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Plus, Loader2, X } from 'lucide-react';
+import { Search, Plus, Loader2, X, Archive } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalCard from '../components/AnimalCard';
 import QuickAddAnimalModal from '../components/QuickAddAnimalModal';
@@ -179,6 +179,13 @@ const MyAnimals = ({ authToken }) => {
                                     </button>
                                 ))}
                             </div>
+                            <button
+                                onClick={() => navigate('/archive')}
+                                className="p-1.5 rounded-full bg-white/20"
+                                title="Archived & sold animals"
+                            >
+                                <Archive size={16} />
+                            </button>
                         </div>
                     )
                 }

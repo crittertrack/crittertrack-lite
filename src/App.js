@@ -18,6 +18,9 @@ import Breeding from './pages/Breeding';
 import PublicSearch from './pages/PublicSearch';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
+import Messages from './pages/Messages';
+import MessageThread from './pages/MessageThread';
+import Archive from './pages/Archive';
 import BottomNav from './components/BottomNav';
 import BrandHeader from './components/BrandHeader';
 import OfflineBanner from './components/OfflineBanner';
@@ -88,12 +91,12 @@ function App() {
     );
   }
 
-  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && location.pathname !== '/profile' && location.pathname !== '/notifications';
+  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && location.pathname !== '/profile' && location.pathname !== '/notifications' && !location.pathname.startsWith('/messages') && location.pathname !== '/archive';
 
   return (
     <div className="App">
       <OfflineBanner />
-      {showNav && <BrandHeader userProfile={userProfile} onLogout={logout} authToken={authToken} />}
+      {showNav && <BrandHeader userProfile={userProfile} authToken={authToken} />}
       <Routes>
         <Route path="/" element={<Navigate to="/animals" replace />} />
         <Route path="/animals" element={<MyAnimals authToken={authToken} />} />
@@ -104,6 +107,9 @@ function App() {
         <Route path="/search" element={<PublicSearch authToken={authToken} />} />
         <Route path="/profile" element={<Profile authToken={authToken} userProfile={userProfile} onProfileUpdated={refreshProfile} onLogout={logout} />} />
         <Route path="/notifications" element={<Notifications authToken={authToken} />} />
+        <Route path="/messages" element={<Messages authToken={authToken} />} />
+        <Route path="/messages/:otherUserId" element={<MessageThread authToken={authToken} userProfile={userProfile} />} />
+        <Route path="/archive" element={<Archive authToken={authToken} />} />
         <Route path="*" element={<Navigate to="/animals" replace />} />
       </Routes>
       {showNav && <BottomNav />}

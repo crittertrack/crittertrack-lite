@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import apiClient from '../utils/apiClient';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, Pencil, Check, X, Mars, Venus, ScrollText, Heart, HeartOff, Eye, EyeOff, Plus, Download, ChevronDown } from 'lucide-react';
+import { Loader2, Pencil, Check, X, Mars, Venus, ScrollText, Heart, HeartOff, Eye, EyeOff, Plus, Download, ChevronDown, ArrowLeftRight, Archive, ArchiveRestore, MessageCircle, Undo2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
 import PedigreeChart from '../components/PedigreeChart';
 import AssignCollectionsModal from '../components/AssignCollectionsModal';
 import ParentPickerModal from '../components/ParentPickerModal';
 import ProfilePickerModal from '../components/ProfilePickerModal';
+import TransferAnimalModal from '../components/TransferAnimalModal';
 import { API_BASE_URL } from '../utils/apiConfig';
 import { formatDate, calculateAgeDetailed } from '../utils/dateFormatter';
 import { getVariety } from '../utils/variety';
@@ -225,6 +226,69 @@ const AnimalDetail = ({ authToken, userProfile }) => {
         }
     };
 
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [transferBusy, setTransferBusy] = useState(false);
+    const [actionError, setActionError] = useState('');
+
+    const handleTransferSubmitted = () => {
+        setShowTransferModal(false);
+        fetchAnimal();
+    };
+
+    const handleWithdrawTransfer = async () => {
+        if (!animal.pendingTransferId) return;
+        setTransferBusy(true);
+        try {
+            await apiClient.post(`/transfers/${animal.pendingTransferId}/withdraw`, {});
+            fetchAnimal();
+        } catch (error) {
+            console.error('Failed to withdraw transfer:', error);
+            setActionError('Failed to withdraw transfer.');
+        } finally {
+            setTransferBusy(false);
+        }
+    };
+
+    const handleReturnToBreeder = async () => {
+        if (!window.confirm('Return this animal to its original breeder? They must accept before ownership changes.')) return;
+        setTransferBusy(true);
+        try {
+            await apiClient.post('/transfers/return', { animalId_public: id });
+            fetchAnimal();
+        } catch (error) {
+            console.error('Failed to request return:', error);
+            setActionError(error.response?.data?.message || 'Failed to request return.');
+        } finally {
+            setTransferBusy(false);
+        }
+    };
+
+    const handleToggleArchive = async () => {
+        const newValue = !animal.archived;
+        setAnimal((a) => ({ ...a, archived: newValue }));
+        try {
+            await apiClient.put(`/animals/${id}`, { archived: newValue });
+        } catch (error) {
+            console.error('Failed to update archived status:', error);
+            setAnimal((a) => ({ ...a, archived: !newValue }));
+        }
+    };
+
+    const [messagingBusy, setMessagingBusy] = useState(false);
+    const handleMessageCreator = async () => {
+        if (!animal.creatorId_public) return;
+        setMessagingBusy(true);
+        try {
+            const response = await apiClient.get(`/messages/resolve/${animal.creatorId_public}`);
+            if (response.data?.userId) navigate(`/messages/${response.data.userId}`);
+        } catch (error) {
+            console.error('Failed to start conversation:', error);
+            setActionError('Could not message this breeder.');
+        } finally {
+            setMessagingBusy(false);
+        }
+    };
+
     // 'sire' | 'dam' | null — which parent slot the picker modal is currently assigning.
     const [pickerRole, setPickerRole] = useState(null);
     const handleAssignParent = async (role, selectedAnimal) => {
@@ -413,7 +477,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                         {animal.id_public && <><span>•</span><span>{animal.id_public}</span></>}
                     </p>
                     {canEdit && (
-                        <div className="flex items-center justify-center gap-1.5 mt-2.5">
+                        <div className="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
                             <button
                                 onClick={handleToggleOwned}
                                 className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border border-black ${
@@ -432,10 +496,65 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                 {animal.isDisplay ? <Eye size={12} /> : <EyeOff size={12} />}
                                 {animal.isDisplay ? 'Public' : 'Private'}
                             </button>
+                            <button
+                                onClick={handleToggleArchive}
+                                className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border border-black ${
+                                    animal.archived ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-gray-200 dark:bg-dark-surface-hover text-gray-600 dark:text-dark-text-secondary'
+                                }`}
+                            >
+                                {animal.archived ? <ArchiveRestore size={12} /> : <Archive size={12} />}
+                                {animal.archived ? 'Unarchive' : 'Archive'}
+                            </button>
+                            {animal.pendingTransferId ? (
+                                <button
+                                    onClick={handleWithdrawTransfer}
+                                    disabled={transferBusy}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border border-black bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 disabled:opacity-50"
+                                >
+                                    <Undo2 size={12} /> Withdraw Transfer
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setShowTransferModal(true)}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border border-black bg-gray-200 dark:bg-dark-surface-hover text-gray-600 dark:text-dark-text-secondary"
+                                >
+                                    <ArrowLeftRight size={12} /> Transfer
+                                </button>
+                            )}
+                            {animal.originalCreatorId && !animal.pendingTransferId && (
+                                <button
+                                    onClick={handleReturnToBreeder}
+                                    disabled={transferBusy}
+                                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border border-black bg-gray-200 dark:bg-dark-surface-hover text-gray-600 dark:text-dark-text-secondary disabled:opacity-50"
+                                >
+                                    <Undo2 size={12} /> Return to Breeder
+                                </button>
+                            )}
                         </div>
                     )}
+                    {!canEdit && animal.creatorId_public && animal.creatorId_public !== userProfile?.id_public && (
+                        <div className="flex items-center justify-center mt-2.5">
+                            <button
+                                onClick={handleMessageCreator}
+                                disabled={messagingBusy}
+                                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full bg-accent dark:bg-dark-accent text-white disabled:opacity-50"
+                            >
+                                {messagingBusy ? <Loader2 size={12} className="animate-spin" /> : <MessageCircle size={12} />} Message Breeder
+                            </button>
+                        </div>
+                    )}
+                    {actionError && <p className="text-xs text-red-600 dark:text-red-400 mt-2 text-center">{actionError}</p>}
                 </div>
             </div>
+
+            {showTransferModal && (
+                <TransferAnimalModal
+                    animal={animal}
+                    onClose={() => setShowTransferModal(false)}
+                    onSubmitted={handleTransferSubmitted}
+                    showError={setActionError}
+                />
+            )}
 
             <div className="flex justify-center gap-1 px-4 mb-3">
                 {TABS.map((t) => (
@@ -568,12 +687,14 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             <Row label="Father" value={parents.sire ? [parents.sire.prefix, parents.sire.name, parents.sire.suffix].filter(Boolean).join(' ') : null} />
                             <Row label="Mother" value={parents.dam ? [parents.dam.prefix, parents.dam.name, parents.dam.suffix].filter(Boolean).join(' ') : null} />
                             <Row label="Enclosure" value={enclosureName} />
-                            <button onClick={() => setShowCollections(true)} className="w-full flex justify-between gap-3">
-                                <span className="text-gray-400 dark:text-dark-text-muted">Collection</span>
-                                <span className="text-accent font-medium text-right underline">
-                                    {(animalMap[animal.id_public] || []).map((cid) => collections.find((c) => c.id === cid)?.name).filter(Boolean).join(', ') || 'Add to collection'}
-                                </span>
-                            </button>
+                            {canEdit && (
+                                <button onClick={() => setShowCollections(true)} className="w-full flex justify-between gap-3">
+                                    <span className="text-gray-400 dark:text-dark-text-muted">Collection</span>
+                                    <span className="text-accent font-medium text-right underline">
+                                        {(animalMap[animal.id_public] || []).map((cid) => collections.find((c) => c.id === cid)?.name).filter(Boolean).join(', ') || 'Add to collection'}
+                                    </span>
+                                </button>
+                            )}
                             {identifiers.map(([label, value]) => <Row key={label} label={label} value={value} />)}
                             {inbreeding && (
                                 <Row

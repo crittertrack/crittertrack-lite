@@ -5,9 +5,9 @@ import { Loader2, User, Camera, Check, KeyRound, Eye, EyeOff, LogOut, Bell, Sun,
 import TopBar from '../components/TopBar';
 import { useTheme } from '../contexts/ThemeContext';
 
-// Messages/requests-transfers/system notifications have no corresponding feature in Lite yet,
-// so those categories are hidden here even though the shared backend endpoint returns all 8.
-const LITE_PUSH_CATEGORIES = new Set(['breeding', 'feeding', 'enclosureCare', 'careTasks', 'health']);
+// All 8 backend categories now have a corresponding feature in Lite (Messages page, and the
+// Requests tab on Notifications covers requests/transfers + system notices).
+const LITE_PUSH_CATEGORIES = new Set(['messages', 'requests', 'system', 'breeding', 'feeding', 'enclosureCare', 'careTasks', 'health']);
 
 // Mirrors the relevant parts of crittertrack-frontend's ProfileEditForm (basic info, privacy
 // toggles, profile image, change password) — no bio/social links/breeder-info page yet.
@@ -115,7 +115,15 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
 
     return (
         <div className="min-h-screen bg-page-bg dark:bg-dark-bg">
-            <TopBar title="Profile" onBack={() => navigate(-1)} />
+            <TopBar
+                title="Profile"
+                onBack={() => navigate(-1)}
+                right={
+                    <button onClick={onLogout} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/20 text-sm font-semibold" title="Log out">
+                        <LogOut size={14} /> Log Out
+                    </button>
+                }
+            />
             <div className="p-4 space-y-4 max-w-md mx-auto">
                 <form onSubmit={handleSaveProfile} className="bg-white dark:bg-dark-card-bg rounded-2xl shadow-sm p-4 space-y-4">
                     <div className="flex flex-col items-center gap-2">
@@ -272,13 +280,6 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
                         {passwordSaving ? 'Changing…' : 'Change Password'}
                     </button>
                 </form>
-
-                <button
-                    onClick={onLogout}
-                    className="w-full flex items-center justify-center gap-2 bg-white dark:bg-dark-card-bg text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700/60 font-semibold py-2.5 rounded-lg shadow-sm"
-                >
-                    <LogOut size={16} /> Log Out
-                </button>
             </div>
         </div>
     );

@@ -3,6 +3,8 @@ import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Utensils, ClipboardList, HeartPulse, Baby, Check, ChevronRight, Home, Package } from 'lucide-react';
 import TopBar from '../components/TopBar';
+import RequestsPanel from '../components/RequestsPanel';
+import { useRequestCount } from '../hooks/useRequestCount';
 
 // Mirrors crittertrack-frontend's utils/scheduleFieldDefs.js — same 18 dedicated Animal-schema
 // fields, kept inline here since Lite has no editing UI for these yet (see AnimalDetail.jsx),
@@ -152,6 +154,8 @@ const SupplyAlertRow = ({ supply, onRestock, busy }) => {
 
 const Notifications = ({ authToken }) => {
     const navigate = useNavigate();
+    const [tab, setTab] = useState('alerts'); // 'alerts' | 'requests'
+    const requestCount = useRequestCount(authToken);
     const [animals, setAnimals] = useState([]);
     const [litters, setLitters] = useState([]);
     const [enclosures, setEnclosures] = useState([]);
@@ -394,9 +398,32 @@ const Notifications = ({ authToken }) => {
 
     return (
         <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(2rem+env(safe-area-inset-bottom))]">
-            <TopBar title={`Notifications${totalCount > 0 ? ` (${totalCount})` : ''}`} onBack={() => navigate(-1)} />
+            <TopBar title="Notifications" onBack={() => navigate(-1)} />
+            <div className="flex gap-1 px-4 pt-3">
+                {[
+                    { key: 'alerts', label: 'Care Alerts', count: totalCount },
+                    { key: 'requests', label: 'Requests', count: requestCount },
+                ].map(({ key, label, count }) => (
+                    <button
+                        key={key}
+                        onClick={() => setTab(key)}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition ${
+                            tab === key ? 'bg-accent dark:bg-dark-accent text-white' : 'bg-white dark:bg-dark-card-bg text-gray-500 dark:text-dark-text-muted'
+                        }`}
+                    >
+                        {label}
+                        {count > 0 && (
+                            <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 ${tab === key ? 'bg-white/25 text-white' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+                                {count}
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
             <div className="px-4 pt-3 space-y-5">
-                {loading ? (
+                {tab === 'requests' ? (
+                    <RequestsPanel navigate={navigate} />
+                ) : loading ? (
                     <div className="flex justify-center py-16"><Loader2 className="animate-spin text-accent" size={28} /></div>
                 ) : (
                     <>

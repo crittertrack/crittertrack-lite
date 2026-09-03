@@ -1,13 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import apiClient from '../utils/apiClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Loader2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
 
 const PublicSearch = () => {
     const navigate = useNavigate();
-    const [query, setQuery] = useState('');
+    const [searchParams] = useSearchParams();
+    const [query, setQuery] = useState(searchParams.get('q') || '');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
@@ -25,6 +26,13 @@ const PublicSearch = () => {
             setLoading(false);
             setSearched(true);
         }
+    }, []);
+
+    // Auto-run the search if the header search bar (BrandHeader) navigated here with a `?q=` param.
+    useEffect(() => {
+        const q = searchParams.get('q');
+        if (q && q.trim()) runSearch(q);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSubmit = (e) => {
