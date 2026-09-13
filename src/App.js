@@ -99,8 +99,8 @@ function App() {
   return (
     <div className="App">
       <OfflineBanner />
-      {showNav && <BrandHeader userProfile={userProfile} authToken={authToken} />}
       {showNav && <NewsTickerBanner authToken={authToken} />}
+      {showNav && <BrandHeader userProfile={userProfile} authToken={authToken} />}
       {showNav && <SupportTierBanner />}
       <Routes>
         <Route path="/" element={<Navigate to="/animals" replace />} />
