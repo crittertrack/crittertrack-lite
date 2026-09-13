@@ -33,6 +33,19 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
     const [passwordMessage, setPasswordMessage] = useState('');
     const [passwordError, setPasswordError] = useState('');
 
+    // userProfile can still be null on first mount (App.js's own loading gate should prevent
+    // this, but re-hydrate defensively in case userProfile ever arrives after this mounts).
+    const hydratedRef = useRef(false);
+    useEffect(() => {
+        if (!userProfile || hydratedRef.current) return;
+        hydratedRef.current = true;
+        setPersonalName(userProfile.personalName || '');
+        setBreederName(userProfile.breederName || '');
+        setShowPersonalName(userProfile.showPersonalName ?? true);
+        setShowBreederName(userProfile.showBreederName ?? false);
+        setImagePreview(userProfile.profileImage || null);
+    }, [userProfile]);
+
     const [pushCategories, setPushCategories] = useState([]);
     const [pushPreferences, setPushPreferences] = useState({});
 
