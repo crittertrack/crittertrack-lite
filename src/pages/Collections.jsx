@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ChevronRight, Plus, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import TopBar from '../components/TopBar';
+import AnimalCard from '../components/AnimalCard';
 import AnimalImage from '../components/shared/AnimalImage';
 import { useCollections } from '../hooks/useCollections';
 
@@ -15,6 +16,7 @@ const Collections = ({ authToken }) => {
     const [newName, setNewName] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
+    const [expandedId, setExpandedId] = useState(null);
 
     const fetchAnimals = useCallback(async () => {
         if (!authToken) return;
@@ -116,27 +118,40 @@ const Collections = ({ authToken }) => {
                                 <button type="button" onClick={() => setEditingId(null)} className="p-1.5 rounded-full bg-gray-100 dark:bg-dark-surface text-gray-500 dark:text-dark-text-muted"><X size={16} /></button>
                             </form>
                         ) : (
-                            <div key={g.id} className="w-full flex items-center gap-2 bg-white dark:bg-dark-card-bg rounded-xl p-3 shadow-sm">
-                                <button
-                                    onClick={() => navigate(`/animals?collection=${g.id}`)}
-                                    className="flex-1 flex items-center gap-3 text-left min-w-0"
-                                >
-                                    <div className="flex -space-x-3 flex-shrink-0">
-                                        {g.matches.slice(0, 3).map((a) => (
-                                            <div key={a.id_public} className="w-9 h-9 rounded-full overflow-hidden border-2 border-white dark:border-dark-card-bg bg-gray-100 dark:bg-dark-surface">
-                                                <AnimalImage src={a.imageUrl || a.photoUrl} alt={a.name} iconSize={14} />
-                                            </div>
-                                        ))}
-                                        {g.matches.length === 0 && <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark-surface" />}
+                            <div key={g.id} className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm overflow-hidden">
+                                <div className="w-full flex items-center gap-2 p-3">
+                                    <button
+                                        onClick={() => setExpandedId((id) => (id === g.id ? null : g.id))}
+                                        className="flex-1 flex items-center gap-3 text-left min-w-0"
+                                    >
+                                        <div className="flex -space-x-3 flex-shrink-0">
+                                            {g.matches.slice(0, 3).map((a) => (
+                                                <div key={a.id_public} className="w-9 h-9 rounded-full overflow-hidden border-2 border-white dark:border-dark-card-bg bg-gray-100 dark:bg-dark-surface">
+                                                    <AnimalImage src={a.imageUrl || a.photoUrl} alt={a.name} iconSize={14} />
+                                                </div>
+                                            ))}
+                                            {g.matches.length === 0 && <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark-surface" />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate">{g.name}</p>
+                                            <p className="text-xs text-gray-500 dark:text-dark-text-muted">{g.matches.length} animal{g.matches.length === 1 ? '' : 's'}</p>
+                                        </div>
+                                    </button>
+                                    <button onClick={() => startEdit(g)} className="p-1.5 rounded-full text-gray-400 dark:text-dark-text-muted flex-shrink-0"><Pencil size={15} /></button>
+                                    <button onClick={() => handleDelete(g)} className="p-1.5 rounded-full text-gray-400 dark:text-dark-text-muted flex-shrink-0"><Trash2 size={15} /></button>
+                                    {expandedId === g.id ? <ChevronUp size={18} className="text-gray-300 dark:text-dark-text-muted flex-shrink-0" /> : <ChevronDown size={18} className="text-gray-300 dark:text-dark-text-muted flex-shrink-0" />}
+                                </div>
+                                {expandedId === g.id && (
+                                    <div className="px-3 pb-3 space-y-2">
+                                        {g.matches.length === 0 ? (
+                                            <p className="text-xs text-gray-400 dark:text-dark-text-muted text-center py-2">No animals in this collection yet.</p>
+                                        ) : (
+                                            g.matches.map((a) => (
+                                                <AnimalCard key={a.id_public} animal={a} onOpen={(id) => navigate(`/animals/${id}`)} />
+                                            ))
+                                        )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-dark-text truncate">{g.name}</p>
-                                        <p className="text-xs text-gray-500 dark:text-dark-text-muted">{g.matches.length} animal{g.matches.length === 1 ? '' : 's'}</p>
-                                    </div>
-                                </button>
-                                <button onClick={() => startEdit(g)} className="p-1.5 rounded-full text-gray-400 dark:text-dark-text-muted flex-shrink-0"><Pencil size={15} /></button>
-                                <button onClick={() => handleDelete(g)} className="p-1.5 rounded-full text-gray-400 dark:text-dark-text-muted flex-shrink-0"><Trash2 size={15} /></button>
-                                <ChevronRight size={18} className="text-gray-300 dark:text-dark-text-muted flex-shrink-0" />
+                                )}
                             </div>
                         )
                     ))
