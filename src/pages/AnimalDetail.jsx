@@ -18,6 +18,9 @@ import { getSpeciesCategory, getAppearanceFields } from '../utils/appearanceFiel
 import { useCollections } from '../hooks/useCollections';
 
 const TABS = ['Summary', 'Records', 'Photos', 'Pedigree'];
+// Display-only renames (Summary -> Dashboard, Photos -> Gallery) to match crittertrack-frontend's
+// naming; internal tab keys stay as-is since they're used throughout for state/comparisons.
+const TAB_LABELS = { Summary: 'Dashboard', Records: 'Records', Photos: 'Gallery', Pedigree: 'Pedigree' };
 const STATUS_OPTIONS = ['Pet', 'Growout', 'Breeder', 'Available', 'Booked', 'Retired', 'Deceased', 'Rehomed', 'Unknown'];
 const GENDER_OPTIONS = ['Male', 'Female', 'Intersex', 'Mixed', 'Unknown'];
 const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'Negotiable'];
@@ -565,7 +568,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                             tab === t ? 'bg-accent dark:bg-dark-accent text-white' : 'bg-white dark:bg-dark-card-bg text-gray-500 dark:text-dark-text-muted'
                         }`}
                     >
-                        {t}
+                        {TAB_LABELS[t] || t}
                     </button>
                 ))}
             </div>
@@ -670,7 +673,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                         </div>
                     ) : (
                         <div className="bg-white dark:bg-dark-card-bg rounded-xl p-4 space-y-2 shadow-sm text-sm">
-                            <p className="font-bold text-gray-800 dark:text-dark-text mb-1">Summary</p>
+                            <p className="font-bold text-gray-800 dark:text-dark-text mb-1">Dashboard</p>
                             <Row
                                 label="Birth Date"
                                 value={

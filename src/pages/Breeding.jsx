@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Baby, Plus, Check, Calendar, ScanHeart, Hourglass, ChevronDown, X, Search, ScrollText } from 'lucide-react';
+import { Loader2, Baby, Plus, Check, Calendar, ScanHeart, Hourglass, ChevronDown, X, Search, ScrollText, Pencil } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
 import QuickAddAnimalModal from '../components/QuickAddAnimalModal';
@@ -64,6 +64,42 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
     const [loadingOffspring, setLoadingOffspring] = useState(false);
     const [ownerNames, setOwnerNames] = useState({}); // creatorId_public -> display name, for transferred offspring
     const [showCert, setShowCert] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [editForm, setEditForm] = useState({
+        breedingPairCodeName: litter.breedingPairCodeName || '',
+        maleCount: litter.maleCount ?? '',
+        femaleCount: litter.femaleCount ?? '',
+        unknownCount: litter.unknownCount ?? '',
+        notes: litter.notes || '',
+    });
+
+    const startEdit = () => {
+        setEditForm({
+            breedingPairCodeName: litter.breedingPairCodeName || '',
+            maleCount: litter.maleCount ?? '',
+            femaleCount: litter.femaleCount ?? '',
+            unknownCount: litter.unknownCount ?? '',
+            notes: litter.notes || '',
+        });
+        setEditing(true);
+    };
+
+    const saveEdit = async () => {
+        setSavingEdit(true);
+        try {
+            const fields = {
+                breedingPairCodeName: editForm.breedingPairCodeName.trim() || null,
+                maleCount: editForm.maleCount === '' ? null : Number(editForm.maleCount),
+                femaleCount: editForm.femaleCount === '' ? null : Number(editForm.femaleCount),
+                unknownCount: editForm.unknownCount === '' ? null : Number(editForm.unknownCount),
+                notes: editForm.notes,
+            };
+            await apiClient.put(`/litters/${litter._id}`, fields);
+            onUpdated(litter._id, fields);
+            setEditing(false);
+        } finally { setSavingEdit(false); }
+    };
 
     // Same stage rules as crittertrack-frontend's LitterManagement: Planned -> Mated ->
     // Pregnant -> Born, with nursing/weaned tracked separately once born.
@@ -163,15 +199,61 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
     const offspringCount = (litter.offspringIds_public || []).length;
     const animalName = (a) => [a.prefix, a.name, a.suffix].filter(Boolean).join(' ') || a.id_public;
 
+    if (editing) {
+        return (
+            <div className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm p-3.5 space-y-2.5">
+                {litter.litter_id_public && (
+                    <span className="inline-block text-[10px] font-mono bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{litter.litter_id_public}</span>
+                )}
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Litter Name</label>
+                    <input value={editForm.breedingPairCodeName} onChange={(e) => setEditForm((f) => ({ ...f, breedingPairCodeName: e.target.value }))} className="input mt-1" placeholder="e.g. Summer 2025 Litter A" />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Male</label>
+                        <input type="number" value={editForm.maleCount} onChange={(e) => setEditForm((f) => ({ ...f, maleCount: e.target.value }))} className="input mt-1" />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Female</label>
+                        <input type="number" value={editForm.femaleCount} onChange={(e) => setEditForm((f) => ({ ...f, femaleCount: e.target.value }))} className="input mt-1" />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Unknown</label>
+                        <input type="number" value={editForm.unknownCount} onChange={(e) => setEditForm((f) => ({ ...f, unknownCount: e.target.value }))} className="input mt-1" />
+                    </div>
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Notes</label>
+                    <textarea value={editForm.notes} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))} className="input mt-1" rows={2} />
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={saveEdit} disabled={savingEdit} className="flex-1 flex items-center justify-center gap-1 bg-accent dark:bg-dark-accent text-white text-xs font-semibold py-1.5 rounded-lg disabled:opacity-50">
+                        {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Save
+                    </button>
+                    <button onClick={() => setEditing(false)} disabled={savingEdit} className="flex-1 flex items-center justify-center gap-1 bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-dark-text-secondary text-xs font-semibold py-1.5 rounded-lg disabled:opacity-50">
+                        <X size={13} /> Cancel
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm overflow-hidden">
             <div className="p-3.5 space-y-2.5 cursor-pointer" onClick={() => setExpanded((e) => !e)}>
                 <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-bold text-gray-800 dark:text-dark-text truncate min-w-0">{litter.breedingPairCodeName || litter.litter_id_public || 'Untitled Litter'}</p>
+                    <div className="min-w-0">
+                        {litter.litter_id_public && (
+                            <span className="inline-block text-[9px] font-mono bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded mb-0.5">{litter.litter_id_public}</span>
+                        )}
+                        <p className="text-sm font-bold text-gray-800 dark:text-dark-text truncate">{litter.breedingPairCodeName || 'Untitled Litter'}</p>
+                    </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                         {stageLabel && (
                             <span className={`text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap ${BADGE_STYLES[stageLabel]}`}>{stageLabel}</span>
                         )}
+                        <button onClick={(e) => { e.stopPropagation(); startEdit(); }} className="p-1 text-gray-400 dark:text-dark-text-muted"><Pencil size={14} /></button>
                         <ChevronDown size={16} className={`text-gray-300 dark:text-dark-text-muted transition-transform ${expanded ? 'rotate-180' : ''}`} />
                     </div>
                 </div>
@@ -485,6 +567,27 @@ const Breeding = ({ authToken, userProfile }) => {
                 const haystack = [l.breedingPairCodeName, l.litter_id_public, animalFullName(l.sire), animalFullName(l.dam)]
                     .filter(Boolean).join(' ').toLowerCase();
                 return haystack.includes(q);
+            })
+            // Same order as crittertrack-frontend's LitterManagement: Pregnant -> Mated ->
+            // Planned -> Born, newest date first within each group.
+            .sort((a, b) => {
+                const rank = (l) => {
+                    const hasBirth = !!l.birthDate;
+                    const hasPregnancy = !!l.pregnancyDate;
+                    if (hasPregnancy && !hasBirth) return 0;
+                    if (!l.isPlanned && !!l.matingDate && !hasPregnancy && !hasBirth) return 1;
+                    if (l.isPlanned && !hasPregnancy && !hasBirth) return 2;
+                    return 3;
+                };
+                const aRank = rank(a);
+                const bRank = rank(b);
+                if (aRank !== bRank) return aRank - bRank;
+                const aDate = (a.birthDate || a.matingDate) ? new Date(a.birthDate || a.matingDate).getTime() : null;
+                const bDate = (b.birthDate || b.matingDate) ? new Date(b.birthDate || b.matingDate).getTime() : null;
+                if (aDate === null && bDate === null) return 0;
+                if (aDate === null) return 1;
+                if (bDate === null) return -1;
+                return bDate - aDate;
             });
     }, [litters, stageFilter, debouncedSearch]);
 

@@ -1,0 +1,12 @@
+/* Mirrors crittertrack-frontend/src/components/NewsTickerBanner.css */
+.news-ticker-container {
+  display: inline-block;
+  width: max-content;
+  animation: ticker-scroll linear infinite;
+  animation-duration: 30s;
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}

@@ -112,7 +112,9 @@ const MyAnimals = ({ authToken }) => {
     const filtered = useMemo(() => {
         // 'owned' hides animals manually marked isOwned:false (e.g. pedigree placeholder
         // ancestors); 'all' shows everything the user created, still minus transferred/archived.
-        let list = ownedMode === 'owned' ? animals.filter((a) => a.isOwned !== false) : animals;
+        // A collection is a deliberately curated set, so viewing one always shows every member
+        // regardless of ownership — the owned/all toggle is hidden while collectionKey is set.
+        let list = (!collectionKey && ownedMode === 'owned') ? animals.filter((a) => a.isOwned !== false) : animals;
         if (collectionKey) {
             list = list.filter((a) => (animalMap[a.id_public] || []).includes(collectionKey));
         }

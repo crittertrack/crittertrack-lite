@@ -21,10 +21,13 @@ import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
 import MessageThread from './pages/MessageThread';
 import Archive from './pages/Archive';
+import News from './pages/News';
 import BottomNav from './components/BottomNav';
 import BrandHeader from './components/BrandHeader';
 import OfflineBanner from './components/OfflineBanner';
 import SyncFailureBanner from './components/SyncFailureBanner';
+import NewsTickerBanner from './components/NewsTickerBanner';
+import SupportTierBanner from './components/SupportTierBanner';
 
 function App() {
   const { authToken, userProfile, loading, login, logout, completeAuth, refreshProfile } = useAuth();
@@ -91,12 +94,14 @@ function App() {
     );
   }
 
-  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && location.pathname !== '/profile' && location.pathname !== '/notifications' && !location.pathname.startsWith('/messages') && location.pathname !== '/archive';
+  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && location.pathname !== '/profile' && location.pathname !== '/notifications' && !location.pathname.startsWith('/messages') && location.pathname !== '/archive' && location.pathname !== '/news';
 
   return (
     <div className="App">
       <OfflineBanner />
       {showNav && <BrandHeader userProfile={userProfile} authToken={authToken} />}
+      {showNav && <NewsTickerBanner authToken={authToken} />}
+      {showNav && <SupportTierBanner />}
       <Routes>
         <Route path="/" element={<Navigate to="/animals" replace />} />
         <Route path="/animals" element={<MyAnimals authToken={authToken} />} />
@@ -110,6 +115,7 @@ function App() {
         <Route path="/messages" element={<Messages authToken={authToken} />} />
         <Route path="/messages/:otherUserId" element={<MessageThread authToken={authToken} userProfile={userProfile} />} />
         <Route path="/archive" element={<Archive authToken={authToken} />} />
+        <Route path="/news" element={<News authToken={authToken} />} />
         <Route path="*" element={<Navigate to="/animals" replace />} />
       </Routes>
       {showNav && <BottomNav />}

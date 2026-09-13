@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import { X, Loader2, Plus, Trash2, Home } from 'lucide-react';
 import AnimalImage from './shared/AnimalImage';
 
 // Quick assign/remove animals for a single enclosure — opened from the Enclosures overview.
 const EnclosureDetailModal = ({ enclosure, authToken, onClose, onAnimalEnclosureChanged }) => {
+    const navigate = useNavigate();
     const [allAnimals, setAllAnimals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showPicker, setShowPicker] = useState(false);
@@ -103,10 +105,15 @@ const EnclosureDetailModal = ({ enclosure, authToken, onClose, onAnimalEnclosure
                             )}
                             {assigned.map((a) => (
                                 <div key={a.id_public} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-dark-surface">
-                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-dark-surface-hover flex-shrink-0">
-                                        <AnimalImage src={a.imageUrl || a.photoUrl} alt={a.name} iconSize={12} />
-                                    </div>
-                                    <span className="text-sm flex-1 truncate text-gray-800 dark:text-dark-text">{[a.prefix, a.name, a.suffix].filter(Boolean).join(' ')}</span>
+                                    <button
+                                        onClick={() => { onClose(); navigate(`/animals/${a.id_public}`); }}
+                                        className="flex-1 flex items-center gap-2 min-w-0 text-left"
+                                    >
+                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-dark-surface-hover flex-shrink-0">
+                                            <AnimalImage src={a.imageUrl || a.photoUrl} alt={a.name} iconSize={12} />
+                                        </div>
+                                        <span className="text-sm flex-1 truncate text-gray-800 dark:text-dark-text">{[a.prefix, a.name, a.suffix].filter(Boolean).join(' ')}</span>
+                                    </button>
                                     <button onClick={() => remove(a)} disabled={busyId === a.id_public} className="p-1 text-red-400 dark:text-red-400/80 disabled:opacity-50">
                                         {busyId === a.id_public ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                     </button>
