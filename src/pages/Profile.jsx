@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, User, Camera, Check, KeyRound, Eye, EyeOff, LogOut, Bell, Sun, Moon, Monitor, ExternalLink } from 'lucide-react';
+import { Loader2, User, Camera, Check, KeyRound, Eye, EyeOff, LogOut, Bell, Sun, Moon, Monitor, ExternalLink, MessageSquare } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -113,16 +113,22 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
         }
     };
 
+    const handleReportIssue = async () => {
+        const description = window.prompt('Describe the issue or feedback (max 1000 characters):');
+        if (!description || !description.trim()) return;
+        try {
+            await apiClient.post('/bug-reports', { category: 'General Feedback', description: description.trim().slice(0, 1000), page: 'Profile Settings (native)' });
+            window.alert('Thanks! Your report has been submitted.');
+        } catch (err) {
+            window.alert('Failed to submit report. Please try again later.');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-page-bg dark:bg-dark-bg">
             <TopBar
                 title="Profile"
                 onBack={() => navigate(-1)}
-                right={
-                    <button onClick={onLogout} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/20 text-sm font-semibold" title="Log out">
-                        <LogOut size={14} /> Log Out
-                    </button>
-                }
             />
             <div className="p-4 space-y-4 max-w-md mx-auto">
                 {userProfile?.id_public && (
@@ -288,6 +294,20 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
                         {passwordSaving ? 'Changing…' : 'Change Password'}
                     </button>
                 </form>
+
+                <button
+                    onClick={handleReportIssue}
+                    className="w-full flex items-center justify-center gap-2 bg-white dark:bg-dark-card-bg border border-gray-200 dark:border-dark-border rounded-2xl shadow-sm py-2.5 text-sm font-semibold text-gray-700 dark:text-dark-text"
+                >
+                    <MessageSquare size={16} /> Report an Issue
+                </button>
+
+                <button
+                    onClick={onLogout}
+                    className="w-full flex items-center justify-center gap-2 bg-white dark:bg-dark-card-bg border border-red-200 dark:border-red-700/60 rounded-2xl shadow-sm py-2.5 text-sm font-semibold text-red-600 dark:text-red-400"
+                >
+                    <LogOut size={16} /> Log Out
+                </button>
             </div>
         </div>
     );
