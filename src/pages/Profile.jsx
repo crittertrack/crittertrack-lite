@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import apiClient from '../utils/apiClient';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, User, Camera, Check, KeyRound, Eye, EyeOff, LogOut, Bell, Sun, Moon, Monitor } from 'lucide-react';
+import { Loader2, User, Camera, Check, KeyRound, Eye, EyeOff, LogOut, Bell, Sun, Moon, Monitor, ExternalLink } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -125,6 +125,14 @@ const Profile = ({ authToken, userProfile, onProfileUpdated, onLogout }) => {
                 }
             />
             <div className="p-4 space-y-4 max-w-md mx-auto">
+                {userProfile?.id_public && (
+                    <button
+                        onClick={() => navigate(`/profile/${userProfile.id_public}`)}
+                        className="w-full flex items-center justify-center gap-2 bg-white dark:bg-dark-card-bg border border-gray-200 dark:border-dark-border rounded-2xl shadow-sm py-2.5 text-sm font-semibold text-gray-700 dark:text-dark-text"
+                    >
+                        <ExternalLink size={16} /> Go to Profile
+                    </button>
+                )}
                 <form onSubmit={handleSaveProfile} className="bg-white dark:bg-dark-card-bg rounded-2xl shadow-sm p-4 space-y-4">
                     <div className="flex flex-col items-center gap-2">
                         <button
