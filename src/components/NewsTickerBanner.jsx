@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
+import { renderRichText } from '../utils/richText';
 import { Rss, BarChart2, Info, Heart, Gem, Flame } from 'lucide-react';
 import './NewsTickerBanner.css';
 
@@ -77,7 +78,7 @@ const NewsTickerBanner = ({ authToken }) => {
           <span key={item._id} className="inline-flex items-center px-4 font-semibold">
             <button onClick={() => navigate('/news')} className="hover:underline bg-transparent border-none text-white p-0 cursor-pointer flex items-center">
               {getBroadcastIcon(item)}
-              {item.pollQuestion || item.title}
+              {renderRichText(item.pollQuestion || item.title)}
             </button>
             {(index < news.length - 1 || supporters.length > 0) && <span className="mx-4">|</span>}
           </span>

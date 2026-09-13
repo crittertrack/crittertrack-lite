@@ -1,12 +1,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { PawPrint, LayoutGrid, Home, Baby } from 'lucide-react';
+import { Cat, FolderOpen, Home, BookOpen } from 'lucide-react';
 
+// Icons match crittertrack-frontend's own nav choices for these same concepts (full site is
+// the source of truth on icons — see lite-web-toggle-brainstorm.md Decision #7).
 const NAV_ITEMS = [
-    { to: '/animals', label: 'Animals', icon: PawPrint },
-    { to: '/collections', label: 'Collections', icon: LayoutGrid },
+    { to: '/animals', label: 'Animals', icon: Cat },
+    { to: '/collections', label: 'Collections', icon: FolderOpen },
     { to: '/enclosures', label: 'Enclosures', icon: Home },
-    { to: '/breeding', label: 'Litters', icon: Baby },
+    { to: '/breeding', label: 'Litters', icon: BookOpen },
 ];
 
 const BottomNav = () => (

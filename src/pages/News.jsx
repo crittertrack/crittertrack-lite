@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../utils/apiClient';
 import TopBar from '../components/TopBar';
+import { renderRichText } from '../utils/richText';
 import { Rss, BarChart2, Info, Gem, Flame, Loader2 } from 'lucide-react';
 
 // Dedicated news/updates page — the destination for NewsTickerBanner item clicks. Lite has no
@@ -63,8 +64,8 @@ const News = () => {
                                         <div key={item._id} className="bg-white dark:bg-dark-card-bg rounded-lg shadow-sm p-3 flex items-start gap-2">
                                             {getBroadcastIcon(item)}
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-gray-800 dark:text-dark-text">{item.pollQuestion || item.title}</p>
-                                                {item.message && <p className="text-sm text-gray-600 dark:text-dark-text-muted mt-0.5">{item.message}</p>}
+                                                <p className="font-semibold text-gray-800 dark:text-dark-text">{renderRichText(item.pollQuestion || item.title)}</p>
+                                                {item.message && <p className="text-sm text-gray-600 dark:text-dark-text-muted mt-0.5">{renderRichText(item.message)}</p>}
                                                 {item.createdAt && <p className="text-xs text-gray-400 dark:text-dark-text-muted mt-1">{new Date(item.createdAt).toLocaleDateString()}</p>}
                                             </div>
                                         </div>

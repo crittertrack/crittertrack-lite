@@ -88,11 +88,21 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
     const saveEdit = async () => {
         setSavingEdit(true);
         try {
+            const maleCount = editForm.maleCount === '' ? 0 : Number(editForm.maleCount);
+            const femaleCount = editForm.femaleCount === '' ? 0 : Number(editForm.femaleCount);
+            const unknownCount = editForm.unknownCount === '' ? 0 : Number(editForm.unknownCount);
+            // Keep "Total Born" (litterSizeBorn/numberBorn) derived from the sex counts instead of
+            // a separate manual field, so the two can't drift apart — mirrors crittertrack-frontend's
+            // LitterManagement reconcileLitterFormCounts (also floored at already-linked offspring).
+            const linkedOffspringCount = (litter.offspringIds_public || []).length;
+            const litterSizeBorn = Math.max(maleCount + femaleCount + unknownCount, linkedOffspringCount) || null;
             const fields = {
                 breedingPairCodeName: editForm.breedingPairCodeName.trim() || null,
-                maleCount: editForm.maleCount === '' ? null : Number(editForm.maleCount),
-                femaleCount: editForm.femaleCount === '' ? null : Number(editForm.femaleCount),
-                unknownCount: editForm.unknownCount === '' ? null : Number(editForm.unknownCount),
+                maleCount: maleCount || null,
+                femaleCount: femaleCount || null,
+                unknownCount: unknownCount || null,
+                litterSizeBorn,
+                numberBorn: litterSizeBorn,
                 notes: editForm.notes,
             };
             await apiClient.put(`/litters/${litter._id}`, fields);
@@ -209,18 +219,21 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
                     <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Litter Name</label>
                     <input value={editForm.breedingPairCodeName} onChange={(e) => setEditForm((f) => ({ ...f, breedingPairCodeName: e.target.value }))} className="input mt-1" placeholder="e.g. Summer 2025 Litter A" />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                    <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Male</label>
-                        <input type="number" value={editForm.maleCount} onChange={(e) => setEditForm((f) => ({ ...f, maleCount: e.target.value }))} className="input mt-1" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Female</label>
-                        <input type="number" value={editForm.femaleCount} onChange={(e) => setEditForm((f) => ({ ...f, femaleCount: e.target.value }))} className="input mt-1" />
-                    </div>
-                    <div>
-                        <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Unknown</label>
-                        <input type="number" value={editForm.unknownCount} onChange={(e) => setEditForm((f) => ({ ...f, unknownCount: e.target.value }))} className="input mt-1" />
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Offspring Born, by Sex</label>
+                    <div className="grid grid-cols-3 gap-2 mt-1">
+                        <div>
+                            <label className="text-[10px] text-gray-400 dark:text-dark-text-muted">Males</label>
+                            <input type="number" value={editForm.maleCount} onChange={(e) => setEditForm((f) => ({ ...f, maleCount: e.target.value }))} className="input mt-0.5" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-400 dark:text-dark-text-muted">Females</label>
+                            <input type="number" value={editForm.femaleCount} onChange={(e) => setEditForm((f) => ({ ...f, femaleCount: e.target.value }))} className="input mt-0.5" />
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-400 dark:text-dark-text-muted">Unknown</label>
+                            <input type="number" value={editForm.unknownCount} onChange={(e) => setEditForm((f) => ({ ...f, unknownCount: e.target.value }))} className="input mt-0.5" />
+                        </div>
                     </div>
                 </div>
                 <div>
