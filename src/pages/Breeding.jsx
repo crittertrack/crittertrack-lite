@@ -66,24 +66,39 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
     const [showCert, setShowCert] = useState(false);
     const [editing, setEditing] = useState(false);
     const [savingEdit, setSavingEdit] = useState(false);
-    const [editForm, setEditForm] = useState({
+    const [editAnimals, setEditAnimals] = useState(null); // lazy-loaded sire/dam options, only fetched once editing starts
+    const [loadingEditAnimals, setLoadingEditAnimals] = useState(false);
+    const emptyEditForm = () => ({
+        species: litter.species || litter.sire?.species || litter.dam?.species || '',
+        sireId_public: litter.sireId_public || '',
+        damId_public: litter.damId_public || '',
+        matingDate: litter.matingDate ? litter.matingDate.slice(0, 10) : '',
+        birthDate: litter.birthDate ? litter.birthDate.slice(0, 10) : '',
         breedingPairCodeName: litter.breedingPairCodeName || '',
         maleCount: litter.maleCount ?? '',
         femaleCount: litter.femaleCount ?? '',
         unknownCount: litter.unknownCount ?? '',
         notes: litter.notes || '',
     });
+    const [editForm, setEditForm] = useState(emptyEditForm);
 
     const startEdit = () => {
-        setEditForm({
-            breedingPairCodeName: litter.breedingPairCodeName || '',
-            maleCount: litter.maleCount ?? '',
-            femaleCount: litter.femaleCount ?? '',
-            unknownCount: litter.unknownCount ?? '',
-            notes: litter.notes || '',
-        });
+        setEditForm(emptyEditForm());
         setEditing(true);
     };
+
+    useEffect(() => {
+        if (!editing || editAnimals !== null) return;
+        setLoadingEditAnimals(true);
+        apiClient.get('/animals')
+            .then((res) => setEditAnimals((Array.isArray(res.data) ? res.data : []).filter((a) => !a.isViewOnly)))
+            .catch(() => setEditAnimals([]))
+            .finally(() => setLoadingEditAnimals(false));
+    }, [editing, editAnimals, authToken]);
+
+    const editSpeciesOptions = [...new Set((editAnimals || []).map((a) => a.species).filter(Boolean))].sort();
+    const editSires = (editAnimals || []).filter((a) => a.species === editForm.species && a.gender !== 'Female');
+    const editDams = (editAnimals || []).filter((a) => a.species === editForm.species && a.gender !== 'Male');
 
     const saveEdit = async () => {
         setSavingEdit(true);
@@ -97,6 +112,11 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
             const linkedOffspringCount = (litter.offspringIds_public || []).length;
             const litterSizeBorn = Math.max(maleCount + femaleCount + unknownCount, linkedOffspringCount) || null;
             const fields = {
+                species: editForm.species,
+                sireId_public: editForm.sireId_public || null,
+                damId_public: editForm.damId_public || null,
+                matingDate: editForm.matingDate || null,
+                birthDate: editForm.birthDate || null,
                 breedingPairCodeName: editForm.breedingPairCodeName.trim() || null,
                 maleCount: maleCount || null,
                 femaleCount: femaleCount || null,
@@ -106,7 +126,13 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
                 notes: editForm.notes,
             };
             await apiClient.put(`/litters/${litter._id}`, fields);
-            onUpdated(litter._id, fields);
+            // sire/dam are populated read-only fields (not stored on the Litter document itself), so
+            // patch them locally from the picked animals for an instant display update.
+            onUpdated(litter._id, {
+                ...fields,
+                sire: (editAnimals || []).find((a) => a.id_public === editForm.sireId_public) || null,
+                dam: (editAnimals || []).find((a) => a.id_public === editForm.damId_public) || null,
+            });
             setEditing(false);
         } finally { setSavingEdit(false); }
     };
@@ -214,6 +240,43 @@ const LitterCard = React.memo(({ litter, authToken, userProfile, onUpdated, onAd
             <div className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm p-3.5 space-y-2.5">
                 {litter.litter_id_public && (
                     <span className="inline-block text-[10px] font-mono bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">{litter.litter_id_public}</span>
+                )}
+                {loadingEditAnimals ? (
+                    <div className="flex justify-center py-4"><Loader2 className="animate-spin text-accent" size={20} /></div>
+                ) : (
+                    <>
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Species</label>
+                            <select value={editForm.species} onChange={(e) => setEditForm((f) => ({ ...f, species: e.target.value, sireId_public: '', damId_public: '' }))} className="input mt-1">
+                                <option value="">Select species...</option>
+                                {editSpeciesOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Sire</label>
+                            <select value={editForm.sireId_public} onChange={(e) => setEditForm((f) => ({ ...f, sireId_public: e.target.value }))} className="input mt-1" disabled={!editForm.species}>
+                                <option value="">Select sire...</option>
+                                {editSires.map((a) => <option key={a.id_public} value={a.id_public}>{[a.prefix, a.name, a.suffix].filter(Boolean).join(' ')}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Dam</label>
+                            <select value={editForm.damId_public} onChange={(e) => setEditForm((f) => ({ ...f, damId_public: e.target.value }))} className="input mt-1" disabled={!editForm.species}>
+                                <option value="">Select dam...</option>
+                                {editDams.map((a) => <option key={a.id_public} value={a.id_public}>{[a.prefix, a.name, a.suffix].filter(Boolean).join(' ')}</option>)}
+                            </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Mating Date</label>
+                                <input type="date" value={editForm.matingDate} onChange={(e) => setEditForm((f) => ({ ...f, matingDate: e.target.value }))} className="input mt-1" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Birth Date</label>
+                                <input type="date" value={editForm.birthDate} onChange={(e) => setEditForm((f) => ({ ...f, birthDate: e.target.value }))} className="input mt-1" />
+                            </div>
+                        </div>
+                    </>
                 )}
                 <div>
                     <label className="text-xs font-semibold text-gray-500 dark:text-dark-text-muted">Litter Name</label>
