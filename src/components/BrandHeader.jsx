@@ -1,46 +1,36 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Search, Bell, MessageCircle } from 'lucide-react';
+import { User, Bell, MessageCircle } from 'lucide-react';
 import logo from '../assets/lite-logo.png';
 import { useAlertCount } from '../hooks/useAlertCount';
 import { useRequestCount } from '../hooks/useRequestCount';
 import { useMessageUnreadCount } from '../hooks/useMessageUnreadCount';
 import AnimalImage from './shared/AnimalImage';
+import GlobalSearchBar from './GlobalSearchBar';
 
 // App-wide brand bar shown above the per-page TopBar on all main tab screens. Top row is a
-// full-width jump-to-search field; the bell now covers BOTH care-task alerts and account
-// requests/updates (see Notifications.jsx tabs), messages gets its own icon, and logout lives
-// on the Profile page now (tap the profile image to get there).
+// live search dropdown (users + animals, same UX as crittertrack-frontend's GlobalSearchBar);
+// the bell now covers BOTH care-task alerts and account requests/updates (see Notifications.jsx
+// tabs), messages gets its own icon, and logout lives on the Profile page now (tap the profile
+// image to get there).
 const BrandHeader = ({ userProfile, authToken }) => {
     const navigate = useNavigate();
-    const [query, setQuery] = useState('');
     const alertCount = useAlertCount(authToken);
     const requestCount = useRequestCount(authToken);
     const messageCount = useMessageUnreadCount(authToken);
     const bellCount = alertCount + requestCount;
-
-    const handleSearchSubmit = (e) => {
-        e.preventDefault();
-        if (!query.trim()) return;
-        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-    };
 
     return (
         <header
             className="sticky top-0 z-30 bg-white dark:bg-dark-card-bg border-b border-gray-100 dark:border-dark-border shadow-sm"
             style={{ paddingTop: 'calc(0.5rem + env(safe-area-inset-top))' }}
         >
-            <form onSubmit={handleSearchSubmit} className="px-4 pb-2">
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-surface rounded-full px-3 py-2">
-                    <Search size={16} className="text-gray-400 dark:text-dark-text-muted flex-shrink-0" />
-                    <input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search public animals…"
-                        className="flex-1 min-w-0 text-sm outline-none bg-transparent text-gray-900 dark:text-dark-text"
-                    />
-                </div>
-            </form>
+            <div className="px-4 pb-2">
+                <GlobalSearchBar
+                    onSelectUser={(user) => navigate(`/profile/${user.id_public}`)}
+                    onSelectAnimal={(animal) => navigate(`/animals/${animal.id_public}`)}
+                />
+            </div>
             <div className="flex items-center justify-between px-4 pb-2.5 gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                     <img src={logo} alt="" className="w-9 h-9 rounded-md object-contain flex-shrink-0" />

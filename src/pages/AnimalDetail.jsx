@@ -706,7 +706,11 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                                 />
                             )}
                             {(animal.manualBreederName || animal.breederId_public) && (
-                                <Row label="Breeder" value={animal.manualBreederName || breederInfo?.breederName || breederInfo?.personalName || animal.breederId_public} />
+                                <Row
+                                    label="Breeder"
+                                    value={animal.manualBreederName || breederInfo?.breederName || breederInfo?.personalName || animal.breederId_public}
+                                    onClick={animal.breederId_public ? () => navigate(`/profile/${animal.breederId_public}`) : undefined}
+                                />
                             )}
                             {(animal.manualownerName || animal.ownerId_public) && (
                                 <Row label="Owner" value={animal.manualownerName || ownerInfo?.breederName || ownerInfo?.personalName || animal.ownerId_public} />
@@ -1378,10 +1382,14 @@ const RecordListEditor = ({ label, records, fields, defaults, onChange }) => {
     );
 };
 
-const Row = ({ label, value }) => (
+const Row = ({ label, value, onClick }) => (
     <div className="flex justify-between gap-3">
         <span className="text-gray-400 dark:text-dark-text-muted">{label}</span>
-        <span className="text-gray-800 dark:text-dark-text font-medium text-right">{value || '—'}</span>
+        {onClick ? (
+            <button onClick={onClick} className="text-accent font-medium text-right underline">{value || '—'}</button>
+        ) : (
+            <span className="text-gray-800 dark:text-dark-text font-medium text-right">{value || '—'}</span>
+        )}
     </div>
 );
 

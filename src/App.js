@@ -16,6 +16,7 @@ import AnimalDetail from './pages/AnimalDetail';
 import Enclosures from './pages/Enclosures';
 import Breeding from './pages/Breeding';
 import PublicSearch from './pages/PublicSearch';
+import PublicProfile from './pages/PublicProfile';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Messages from './pages/Messages';
@@ -94,7 +95,7 @@ function App() {
     );
   }
 
-  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && location.pathname !== '/profile' && location.pathname !== '/notifications' && !location.pathname.startsWith('/messages') && location.pathname !== '/archive' && location.pathname !== '/news';
+  const showNav = !location.pathname.startsWith('/animals/') && location.pathname !== '/search' && !location.pathname.startsWith('/profile/') && location.pathname !== '/profile' && location.pathname !== '/notifications' && !location.pathname.startsWith('/messages') && location.pathname !== '/archive' && location.pathname !== '/news';
 
   return (
     <div className="App">
@@ -110,6 +111,7 @@ function App() {
         <Route path="/enclosures" element={<Enclosures authToken={authToken} />} />
         <Route path="/breeding" element={<Breeding authToken={authToken} userProfile={userProfile} />} />
         <Route path="/search" element={<PublicSearch authToken={authToken} />} />
+        <Route path="/profile/:userId" element={<PublicProfile authToken={authToken} />} />
         <Route path="/profile" element={<Profile authToken={authToken} userProfile={userProfile} onProfileUpdated={refreshProfile} onLogout={logout} />} />
         <Route path="/notifications" element={<Notifications authToken={authToken} />} />
         <Route path="/messages" element={<Messages authToken={authToken} />} />
