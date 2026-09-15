@@ -55,8 +55,8 @@ const fetchAnimalWithFamily = async (id, API_BASE_URL, authToken, depth = 0, cac
     }
     if (!animalInfo) return null;
     await resolveBreederName(animalInfo, API_BASE_URL);
-    const sireId = animalInfo.sireId_public || animalInfo.fatherId_public;
-    const damId = animalInfo.damId_public || animalInfo.motherId_public;
+    const sireId = animalInfo.sireId_public;
+    const damId = animalInfo.damId_public;
     const [father, mother] = await Promise.all([
         sireId ? fetchAnimalWithFamily(sireId, API_BASE_URL, authToken, depth + 1, cache) : null,
         damId ? fetchAnimalWithFamily(damId, API_BASE_URL, authToken, depth + 1, cache) : null,

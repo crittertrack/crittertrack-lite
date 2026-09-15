@@ -45,7 +45,6 @@ const RequestsPanel = ({ navigate }) => {
     };
 
     const handleAcceptTransfer = (n) => runAction(n.transferId, () => apiClient.post(`/transfers/${n.transferId}/accept`, {}), { animalsChanged: true });
-    const handleAcceptViewOnly = (n) => runAction(n.transferId, () => apiClient.post(`/transfers/${n.transferId}/accept-view-only`, {}), { animalsChanged: true });
     const handleDeclineTransfer = (n) => runAction(n.transferId, () => apiClient.post(`/transfers/${n.transferId}/decline`, {}), { animalsChanged: true });
     const handleApprove = (n) => runAction(n._id, () => apiClient.post(`/notifications/${n._id}/approve`, {}));
     const handleReject = (n) => runAction(n._id, () => apiClient.post(`/notifications/${n._id}/reject`, {}), { animalsChanged: true });
@@ -113,27 +112,7 @@ const RequestsPanel = ({ navigate }) => {
                                         </button>
                                     </>
                                 )}
-                                {n.type === 'view_only_offer' && n.transferId && (
-                                    <>
-                                        <button onClick={() => handleAcceptViewOnly(n)} disabled={processing === n.transferId} className="flex items-center gap-1 bg-info-blue text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
-                                            <CheckCircle size={13} /> Accept
-                                        </button>
-                                        <button onClick={() => handleDeclineTransfer(n)} disabled={processing === n.transferId} className="flex items-center gap-1 bg-gray-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
-                                            <XCircle size={13} /> Decline
-                                        </button>
-                                    </>
-                                )}
-                                {n.type === 'link_request' && (
-                                    <>
-                                        <button onClick={() => handleReject(n)} disabled={processing === n._id} className="flex items-center gap-1 bg-accent text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
-                                            <XCircle size={13} /> Reject
-                                        </button>
-                                        <button onClick={() => handleApprove(n)} disabled={processing === n._id} title="The link is already in effect — this just clears it from your pending list." className="flex items-center gap-1 bg-gray-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
-                                            <CheckCircle size={13} /> Acknowledge
-                                        </button>
-                                    </>
-                                )}
-                                {(n.type === 'breeder_request' || n.type === 'parent_request') && (
+                                {(n.type === 'breeder_request' || n.type === 'owner_request' || n.type === 'parent_request') && (
                                     <>
                                         <button onClick={() => handleReject(n)} disabled={processing === n._id} className="flex items-center gap-1 bg-accent text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
                                             <XCircle size={13} /> Reject
@@ -148,12 +127,22 @@ const RequestsPanel = ({ navigate }) => {
                                         <CheckCircle size={13} /> Acknowledge
                                     </button>
                                 )}
-                                {(n.type === 'litter_assignment' || n.type === 'mating_reminder') && (
+                                {n.type === 'litter_assignment' && (
+                                    <>
+                                        <button onClick={() => handleReject(n)} disabled={processing === n._id} className="flex items-center gap-1 bg-accent text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+                                            <XCircle size={13} /> Reject
+                                        </button>
+                                        <button onClick={() => handleApprove(n)} disabled={processing === n._id} className="flex items-center gap-1 bg-gray-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+                                            <CheckCircle size={13} /> Acknowledge
+                                        </button>
+                                    </>
+                                )}
+                                {n.type === 'mating_reminder' && (
                                     <button onClick={() => handleApprove(n)} disabled={processing === n._id} className="flex items-center gap-1 bg-gray-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
                                         <CheckCircle size={13} /> Acknowledge
                                     </button>
                                 )}
-                                {!['link_request', 'breeder_request', 'parent_request', 'transfer_request', 'view_only_offer', 'content_edited', 'litter_assignment', 'mating_reminder'].includes(n.type) && (
+                                {!['breeder_request', 'owner_request', 'parent_request', 'transfer_request', 'content_edited', 'litter_assignment', 'mating_reminder'].includes(n.type) && (
                                     <button onClick={() => handleDelete(n)} className="flex items-center gap-1 bg-gray-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg">
                                         <Trash2 size={13} /> Delete
                                     </button>
