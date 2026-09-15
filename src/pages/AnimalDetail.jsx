@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Pencil, Check, X, Mars, Venus, ScrollText, Heart, HeartOff, Eye, EyeOff, Plus, Download, ChevronDown, ArrowLeftRight, Archive, ArchiveRestore, MessageCircle, Undo2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
+import DeceasedBanner from '../components/shared/DeceasedBanner';
 import PedigreeChart from '../components/PedigreeChart';
 import AssignCollectionsModal from '../components/AssignCollectionsModal';
 import ParentPickerModal from '../components/ParentPickerModal';
@@ -446,9 +447,10 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                 <button
                     type="button"
                     onClick={() => (animal.imageUrl || animal.photoUrl) && setEnlargedImage(animal.imageUrl || animal.photoUrl)}
-                    className="w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-md bg-white dark:bg-dark-card-bg block"
+                    className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-md bg-white dark:bg-dark-card-bg block"
                 >
                     <AnimalImage src={animal.imageUrl || animal.photoUrl} alt={displayName} iconSize={40} />
+                    {animal.status === 'Deceased' && <DeceasedBanner variant="overlay" />}
                 </button>
             </div>
 
