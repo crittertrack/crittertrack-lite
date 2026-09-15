@@ -10,12 +10,20 @@ const RainbowIcon = ({ size = 16, className }) => (
     </svg>
 );
 
-// Fills the photo's bottom-right quadrant (half its width/height = 1/4 its area) so the
-// rainbow sits directly on the image, not floating beside it. `iconClassName` sizes the icon
-// to match the parent photo box's own responsive dimensions.
-const DeceasedCornerBadge = ({ iconClassName = 'w-6 h-6' }) => (
-    <div className="absolute bottom-0 right-0 w-1/2 h-1/2 flex items-center justify-center">
-        <RainbowIcon className={iconClassName} />
+// Simple filled black ribbon/medallion badge for the photo corner.
+const RibbonIcon = ({ className = 'w-8 h-8' }) => (
+    <svg viewBox="0 0 24 24" fill="black" className={className}>
+        <path d="M8 12 L3.5 21 L11 17.5 Z" />
+        <path d="M16 12 L20.5 21 L13 17.5 Z" />
+        <circle cx="12" cy="8.5" r="6.5" />
+    </svg>
+);
+
+// Straddles the photo's bottom-right corner -- the badge's own center sits exactly on the
+// corner point, so it partially overlaps the image and partially hangs off it.
+const DeceasedCornerBadge = ({ iconClassName = 'w-8 h-8' }) => (
+    <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2">
+        <RibbonIcon className={iconClassName} />
     </div>
 );
 
@@ -31,4 +39,4 @@ const DeceasedBanner = ({ size = 'md' }) => {
 };
 
 export default DeceasedBanner;
-export { RainbowIcon, DeceasedCornerBadge };
+export { RainbowIcon, RibbonIcon, DeceasedCornerBadge };
