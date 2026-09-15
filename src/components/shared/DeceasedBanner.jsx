@@ -1,4 +1,10 @@
 import React from 'react';
+import { Ribbon } from 'lucide-react';
+
+// lucide's Ribbon icon, styled as a grey-filled badge with a black outline.
+const RibbonIcon = ({ className = 'w-8 h-8' }) => (
+    <Ribbon className={className} stroke="black" fill="#9ca3af" strokeWidth={2} />
+);
 
 // Hand-drawn rainbow (not lucide's single-tone icon) so each arc gets its own hue -- a
 // "Rainbow Bridge" memorial motif, deliberately not a ribbon, to avoid resembling SimpleBreed's.
@@ -7,15 +13,6 @@ const RainbowIcon = ({ size = 16, className }) => (
         <path d="M22 17a10 10 0 0 0-20 0" stroke="#f87171" />
         <path d="M6 17a6 6 0 0 1 12 0" stroke="#facc15" />
         <path d="M10 17a2 2 0 0 1 4 0" stroke="#60a5fa" />
-    </svg>
-);
-
-// Simple filled black ribbon/medallion badge for the photo corner.
-const RibbonIcon = ({ className = 'w-8 h-8' }) => (
-    <svg viewBox="0 0 24 24" fill="black" className={className}>
-        <path d="M8 12 L3.5 21 L11 17.5 Z" />
-        <path d="M16 12 L20.5 21 L13 17.5 Z" />
-        <circle cx="12" cy="8.5" r="6.5" />
     </svg>
 );
 
