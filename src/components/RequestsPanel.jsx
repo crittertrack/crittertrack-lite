@@ -148,7 +148,12 @@ const RequestsPanel = ({ navigate }) => {
                                         <CheckCircle size={13} /> Acknowledge
                                     </button>
                                 )}
-                                {!['link_request', 'breeder_request', 'parent_request', 'transfer_request', 'view_only_offer', 'content_edited'].includes(n.type) && (
+                                {(n.type === 'litter_assignment' || n.type === 'mating_reminder') && (
+                                    <button onClick={() => handleApprove(n)} disabled={processing === n._id} className="flex items-center gap-1 bg-gray-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg disabled:opacity-50">
+                                        <CheckCircle size={13} /> Acknowledge
+                                    </button>
+                                )}
+                                {!['link_request', 'breeder_request', 'parent_request', 'transfer_request', 'view_only_offer', 'content_edited', 'litter_assignment', 'mating_reminder'].includes(n.type) && (
                                     <button onClick={() => handleDelete(n)} className="flex items-center gap-1 bg-gray-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg">
                                         <Trash2 size={13} /> Delete
                                     </button>
