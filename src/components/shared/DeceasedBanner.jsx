@@ -10,17 +10,25 @@ const RainbowIcon = ({ size = 16 }) => (
     </svg>
 );
 
+// Small circular badge for the rainbow icon, absolutely positioned in a photo's corner
+// (parent photo container needs `relative`) — mirrors the ribbon's corner placement in the
+// SimpleBreed reference, without using a ribbon.
+const DeceasedCornerBadge = ({ size = 12 }) => (
+    <div className="absolute bottom-0.5 right-0.5 sm:bottom-1 sm:right-1 bg-white/90 dark:bg-dark-card-bg/90 rounded-full p-0.5 sm:p-1 shadow">
+        <RainbowIcon size={size} />
+    </div>
+);
+
 // Replaces a card's plain "Deceased" status-bar text, matching that bar's original padding/
 // text size exactly (size="sm" = AnimalList card, size="md" = PublicProfileView card).
 const DeceasedBanner = ({ size = 'md' }) => {
     const isSm = size === 'sm';
     return (
-        <div className={`w-full mt-auto bg-gray-800/90 dark:bg-black/80 flex items-center justify-center gap-1.5 ${isSm ? 'py-0.5 sm:py-1' : 'py-1'}`}>
+        <div className={`w-full mt-auto bg-gray-800/90 dark:bg-black/80 text-center ${isSm ? 'py-0.5 sm:py-1' : 'py-1'}`}>
             <span className={`font-bold tracking-wide text-white uppercase ${isSm ? 'text-[10px] sm:text-xs' : 'text-xs'}`}>Deceased</span>
-            <RainbowIcon size={isSm ? 12 : 14} />
         </div>
     );
 };
 
 export default DeceasedBanner;
-export { RainbowIcon };
+export { RainbowIcon, DeceasedCornerBadge };
