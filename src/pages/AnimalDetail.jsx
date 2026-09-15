@@ -4,7 +4,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Pencil, Check, X, Mars, Venus, ScrollText, Heart, HeartOff, Eye, EyeOff, Plus, Download, ChevronDown, ArrowLeftRight, Archive, ArchiveRestore, MessageCircle, Undo2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import AnimalImage from '../components/shared/AnimalImage';
-import { RainbowIcon } from '../components/shared/DeceasedBanner';
 import PedigreeChart from '../components/PedigreeChart';
 import AssignCollectionsModal from '../components/AssignCollectionsModal';
 import ParentPickerModal from '../components/ParentPickerModal';
@@ -478,7 +477,7 @@ const AnimalDetail = ({ authToken, userProfile }) => {
                     <p className="text-xs text-gray-500 dark:text-dark-text-muted mt-0.5 flex items-center justify-center gap-1 flex-wrap">
                         <span>{animal.species}</span>
                         {animal.status && (animal.status === 'Deceased' ? (
-                            <><span>•</span><span className="font-semibold text-gray-700 dark:text-dark-text-secondary flex items-center gap-1"><RainbowIcon size={12} />{animal.status}</span></>
+                            <><span>•</span><span className="font-semibold text-gray-700 dark:text-dark-text-secondary flex items-center gap-1">{animal.status}</span></>
                         ) : (
                             <><span>•</span><span className="font-semibold text-accent">{animal.status}</span></>
                         ))}
