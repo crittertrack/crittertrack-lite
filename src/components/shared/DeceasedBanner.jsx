@@ -14,7 +14,7 @@ const RainbowIcon = ({ size = 16, className }) => (
 // rainbow sits directly on the image, not floating beside it. `iconClassName` sizes the icon
 // to match the parent photo box's own responsive dimensions.
 const DeceasedCornerBadge = ({ iconClassName = 'w-6 h-6' }) => (
-    <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-white/90 dark:bg-dark-card-bg/90 rounded-br-md flex items-center justify-center">
+    <div className="absolute bottom-0 right-0 w-1/2 h-1/2 flex items-center justify-center">
         <RainbowIcon className={iconClassName} />
     </div>
 );
@@ -24,8 +24,8 @@ const DeceasedCornerBadge = ({ iconClassName = 'w-6 h-6' }) => (
 const DeceasedBanner = ({ size = 'md' }) => {
     const isSm = size === 'sm';
     return (
-        <div className={`w-full mt-auto bg-gray-800/90 dark:bg-black/80 text-center border-t border-gray-700 dark:border-black/60 ${isSm ? 'py-0.5 sm:py-1' : 'py-1'}`}>
-            <span className={`font-medium capitalize text-white ${isSm ? 'text-[10px] sm:text-xs' : 'text-xs'}`}>Deceased</span>
+        <div className={`w-full mt-auto bg-gray-800/90 dark:bg-black/80 text-center border-t border-gray-700 dark:border-black/60 ${isSm ? 'py-0.5' : 'py-0.5'}`}>
+            <span className={`font-medium capitalize text-white leading-none ${isSm ? 'text-[10px]' : 'text-xs'}`}>Deceased</span>
         </div>
     );
 };
