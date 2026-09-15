@@ -27,3 +27,4 @@ const DeceasedBanner = ({ size = 'md', variant = 'bar' }) => {
 };
 
 export default DeceasedBanner;
+export { RainbowIcon };
