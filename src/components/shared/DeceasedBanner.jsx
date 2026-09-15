@@ -25,7 +25,7 @@ const DeceasedBanner = ({ size = 'md' }) => {
     const isSm = size === 'sm';
     return (
         <div className={`w-full mt-auto bg-gray-800/90 dark:bg-black/80 text-center border-t border-gray-700 dark:border-black/60 ${isSm ? 'py-0.5' : 'py-0.5'}`}>
-            <span className={`font-medium capitalize text-white leading-none ${isSm ? 'text-[10px]' : 'text-xs'}`}>Deceased</span>
+            <div className={`font-medium capitalize text-white ${isSm ? 'text-[10px]' : 'text-xs'}`}>Deceased</div>
         </div>
     );
 };
