@@ -92,7 +92,7 @@ export const calculateBreedingAge = (birthDate, endDate) => {
     const remainingDaysAfterYears = totalDays % daysInBreedingYear;
     const months = Math.floor(remainingDaysAfterYears / daysInBreedingMonth);
     const remainingDays = remainingDaysAfterYears % daysInBreedingMonth;
-    if (years > 0) return `${years}y ${months}m`;
+    if (years > 0) return `${years}y ${months}m ${remainingDays}d`;
     if (months > 0) return `${months}m ${remainingDays}d`;
     return `${remainingDays}d`;
 };
@@ -105,10 +105,16 @@ export const formatAnimalAge = (birthDate) => {
     const today = new Date();
     let years = today.getFullYear() - birth.getFullYear();
     let months = today.getMonth() - birth.getMonth();
+    let days = today.getDate() - birth.getDate();
+    if (days < 0) {
+        months--;
+        const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        days += prevMonth.getDate();
+    }
     if (months < 0) { years--; months += 12; }
     if (years < 0) return null;
-    const ageLabel = years > 0 ? `${years}y ${months}m` : `${months}m`;
-    return { years, months, label: ageLabel };
+    const ageLabel = years > 0 ? `${years}y ${months}m ${days}d` : (months > 0 ? `${months}m ${days}d` : `${days}d`);
+    return { years, months, days, label: ageLabel };
 };
 
 export const calculateAgeDetailed = (birthDate) => {
