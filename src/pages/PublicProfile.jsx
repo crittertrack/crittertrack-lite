@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, XCircle, User } from 'lucide-react';
 import apiClient from '../utils/apiClient';
 import TopBar from '../components/TopBar';
@@ -31,10 +31,23 @@ const getDisplayName = (profile) => {
 const PublicProfile = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const routerLocation = useLocation();
     const [profile, setProfile] = useState(null);
     const [animals, setAnimals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+
+    // Profiles can be reached via a shared link/deep link/QR scan with no prior in-app history
+    // entry (e.g. opened straight into this route), so navigate(-1) would either no-op or leave
+    // the app entirely instead of going to the home screen. react-router marks that very first
+    // history entry's location.key as 'default', so detect that case and go home instead.
+    const handleBack = () => {
+        if (routerLocation.key !== 'default') {
+            navigate(-1);
+        } else {
+            navigate('/animals');
+        }
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -70,7 +83,7 @@ const PublicProfile = () => {
     if (notFound || !profile) {
         return (
             <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
-                <TopBar title="Profile" onBack={() => navigate(-1)} />
+                <TopBar title="Profile" onBack={handleBack} />
                 <div className="flex flex-col items-center justify-center text-center px-6 py-16">
                     <XCircle size={48} className="text-red-400 mb-3" />
                     <p className="text-gray-600 dark:text-dark-text-secondary text-sm">This profile either doesn't exist or isn't publicly visible.</p>
@@ -86,7 +99,7 @@ const PublicProfile = () => {
 
     return (
         <div className="min-h-screen bg-page-bg dark:bg-dark-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
-            <TopBar title={displayName} onBack={() => navigate(-1)} />
+            <TopBar title={displayName} onBack={handleBack} />
 
             <div className="p-4">
                 <div className="bg-white dark:bg-dark-card-bg rounded-xl shadow-sm p-4 flex items-center gap-4">
