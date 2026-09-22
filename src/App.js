@@ -28,7 +28,6 @@ import BrandHeader from './components/BrandHeader';
 import OfflineBanner from './components/OfflineBanner';
 import SyncFailureBanner from './components/SyncFailureBanner';
 import NewsTickerBanner from './components/NewsTickerBanner';
-import SupportTierBanner from './components/SupportTierBanner';
 
 function App() {
   const { authToken, userProfile, loading, login, logout, completeAuth, refreshProfile } = useAuth();
@@ -102,7 +101,6 @@ function App() {
       <OfflineBanner />
       {showNav && <NewsTickerBanner authToken={authToken} />}
       {showNav && <BrandHeader userProfile={userProfile} authToken={authToken} />}
-      {showNav && <SupportTierBanner />}
       <Routes>
         <Route path="/" element={<Navigate to="/animals" replace />} />
         <Route path="/animals" element={<MyAnimals authToken={authToken} />} />
