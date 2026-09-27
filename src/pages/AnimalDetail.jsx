@@ -402,13 +402,29 @@ const AnimalDetail = ({ authToken, userProfile }) => {
     // _viewerHasAccess is true for BOTH real owners and view-only (transferred-away) users, so
     // it can't gate editing on its own — compare creatorId_public to the logged-in user instead.
     const canEdit = animal._viewerHasAccess === true && animal.creatorId_public === userProfile?.id_public;
+    // Mirrors the "Identification Numbers" card in crittertrack-frontend's
+    // IdentificationTabContent so both apps show the same set. CritterTrack ID, Colony ID and
+    // the user's custom identifiers were previously missing here.
+    const customIdentifiers = (() => {
+        const raw = animal.identifiers;
+        if (!raw) return [];
+        try {
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            return Array.isArray(parsed) ? parsed.filter((i) => i && i.title && i.value) : [];
+        } catch (e) {
+            return [];
+        }
+    })();
     const identifiers = [
+        ['CritterTrack ID', animal.id_public],
         ['Microchip', animal.microchipNumber],
         ['Breeder ID', animal.breederAssignedId],
         ['Registration', animal.pedigreeRegistrationId],
         ['Tattoo', animal.tattooId],
         ['Ring', animal.ringId],
         ['Eartag', animal.eartagNumber],
+        ['Colony ID', animal.colonyId],
+        ...customIdentifiers.map((i) => [i.title, i.value]),
     ].filter(([, value]) => value);
     const hasRecordsData = Boolean(
         animal.lastFedDate || animal.feedingIntervalHours || (animal.animalCareTasks || []).length ||
